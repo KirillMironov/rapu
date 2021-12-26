@@ -1,0 +1,24 @@
+syntax = "proto3";
+package proto;
+option go_package = "./;proto";
+
+service Users {
+  rpc SignUp(SignUpRequest) returns (Response) {}
+  rpc SignIn(SignInRequest) returns (Response) {}
+}
+
+message SignUpRequest {
+  string Email = 1;
+  string Password = 2;
+  string Username = 3;
+}
+
+message SignInRequest {
+  string Email = 1;
+  string Password = 2;
+}
+
+message Response {
+  string AccessToken = 1;
+  string RefreshToken = 2;
+}
