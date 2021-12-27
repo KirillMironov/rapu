@@ -8,16 +8,16 @@ service Users {
 }
 
 message SignUpRequest {
-  string Username = 1;
-  string Email = 2;
-  string Password = 3;
+  string username = 1;
+  string email = 2;
+  string password = 3;
 }
 
 message SignInRequest {
-  string Email = 1;
-  string Password = 2;
+  string email = 1;
+  string password = 2;
 }
 
 message Response {
-  string AccessToken = 1;
+  string accessToken = 1;
 }
