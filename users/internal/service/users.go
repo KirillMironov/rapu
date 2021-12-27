@@ -11,8 +11,8 @@ type UsersService struct {
 	tokenManager auth.TokenManager
 }
 
-func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenManager) UsersService {
-	return UsersService{
+func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenManager) *UsersService {
+	return &UsersService{
 		repository:   repository,
 		tokenManager: tokenManager,
 	}

@@ -10,8 +10,8 @@ type UsersRepository struct {
 	db *sqlx.DB
 }
 
-func NewUsersRepository(db *sqlx.DB) UsersRepository {
-	return UsersRepository{db: db}
+func NewUsersRepository(db *sqlx.DB) *UsersRepository {
+	return &UsersRepository{db: db}
 }
 
 func (u *UsersRepository) Create(user domain.User) (string, error) {

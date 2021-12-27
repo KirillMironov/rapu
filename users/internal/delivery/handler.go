@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/domain"
 	"github.com/KirillMironov/rapu/internal/delivery/proto"
+	"google.golang.org/grpc"
 )
 
 type Handler struct {
@@ -11,11 +12,19 @@ type Handler struct {
 	proto.UnimplementedUsersServer
 }
 
+func NewHandler(usersService domain.UsersService) *grpc.Server {
+	var server = grpc.NewServer()
+	proto.RegisterUsersServer(server, &Handler{
+		service: usersService,
+	})
+	return server
+}
+
 func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
 	var user = domain.User{
+		Username: request.Username,
 		Email:    request.Email,
 		Password: request.Password,
-		Username: request.Username,
 	}
 
 	token, err := h.service.SignUp(user)
