@@ -8,9 +8,9 @@ service Users {
 }
 
 message SignUpRequest {
-  string Email = 1;
-  string Password = 2;
-  string Username = 3;
+  string Username = 1;
+  string Email = 2;
+  string Password = 3;
 }
 
 message SignInRequest {
@@ -20,5 +20,4 @@ message SignInRequest {
 
 message Response {
   string AccessToken = 1;
-  string RefreshToken = 2;
 }
