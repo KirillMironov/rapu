@@ -1,6 +1,7 @@
 package domain
 
 type User struct {
+	Id       string
 	Username string
 	Email    string
 	Password string
@@ -13,5 +14,5 @@ type UsersService interface {
 
 type UsersRepository interface {
 	Create(User) (string, error)
-	GetByEmail(User) (string, string, error)
+	GetByEmail(email string) (User, error)
 }

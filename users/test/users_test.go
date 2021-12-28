@@ -47,6 +47,10 @@ func TestUsers_SignUp(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
 
+	token, err = svc.SignUp(user)
+	assert.Error(t, err)
+	assert.Empty(t, token)
+
 	token, err = svc.SignIn(user)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)

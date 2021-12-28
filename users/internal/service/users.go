@@ -34,16 +34,16 @@ func (u *UsersService) SignUp(user domain.User) (string, error) {
 	return u.tokenManager.GenerateAuthToken(userId)
 }
 
-func (u *UsersService) SignIn(user domain.User) (string, error) {
-	userId, hashedPassword, err := u.repository.GetByEmail(user)
+func (u *UsersService) SignIn(input domain.User) (string, error) {
+	user, err := u.repository.GetByEmail(input.Email)
 	if err != nil {
 		return "", err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(user.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 	if err != nil {
 		return "", err
 	}
 
-	return u.tokenManager.GenerateAuthToken(userId)
+	return u.tokenManager.GenerateAuthToken(user.Id)
 }
