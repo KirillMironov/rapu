@@ -11,8 +11,7 @@ test-integration:
 	go test -tags=integration -count=1 ./...
 
 proto:
-	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative \
-		internal/delivery/proto/users.proto
+	protoc --go_out=./internal/delivery/proto --go-grpc_out=./internal/delivery/proto config/users.proto
 	go mod tidy
 
 lint:
