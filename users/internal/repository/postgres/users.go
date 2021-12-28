@@ -36,5 +36,5 @@ func (u *UsersRepository) GetByEmail(user domain.User) (string, string, error) {
 	var sqlStr = "SELECT id, password FROM users WHERE email = $1"
 	var userId, password string
 
-	return userId, password, u.db.QueryRowx(sqlStr, user.Email).Scan(&userId, password)
+	return userId, password, u.db.QueryRowx(sqlStr, user.Email).Scan(&userId, &password)
 }
