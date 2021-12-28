@@ -19,7 +19,7 @@ func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenM
 }
 
 func (u *UsersService) SignUp(user domain.User) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.MaxCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
 	}
