@@ -47,3 +47,7 @@ func (u *UsersService) SignIn(input domain.User) (string, error) {
 
 	return u.tokenManager.GenerateAuthToken(user.Id)
 }
+
+func (u *UsersService) Authenticate(token string) (string, error) {
+	return u.tokenManager.VerifyAuthToken(token)
+}
