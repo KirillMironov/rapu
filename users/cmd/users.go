@@ -34,7 +34,7 @@ func main() {
 	// App
 	usersRepo := postgres.NewUsersRepository(db)
 	usersService := service.NewUsersService(usersRepo, tokenManager)
-	handler := delivery.NewHandler(usersService)
+	handler := delivery.NewHandler(usersService, tokenManager)
 
 	listener, err := net.Listen("tcp", "localhost:"+cfg.Port)
 	if err != nil {

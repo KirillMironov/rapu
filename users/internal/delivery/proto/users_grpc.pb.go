@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 type UsersClient interface {
 	SignUp(ctx context.Context, in *SignUpRequest, opts ...grpc.CallOption) (*Response, error)
 	SignIn(ctx context.Context, in *SignInRequest, opts ...grpc.CallOption) (*Response, error)
+	Authenticate(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
 }
 
 type usersClient struct {
@@ -48,12 +49,22 @@ func (c *usersClient) SignIn(ctx context.Context, in *SignInRequest, opts ...grp
 	return out, nil
 }
 
+func (c *usersClient) Authenticate(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error) {
+	out := new(AuthResponse)
+	err := c.cc.Invoke(ctx, "/proto.Users/Authenticate", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServer is the server API for Users service.
 // All implementations must embed UnimplementedUsersServer
 // for forward compatibility
 type UsersServer interface {
 	SignUp(context.Context, *SignUpRequest) (*Response, error)
 	SignIn(context.Context, *SignInRequest) (*Response, error)
+	Authenticate(context.Context, *AuthRequest) (*AuthResponse, error)
 	mustEmbedUnimplementedUsersServer()
 }
 
@@ -66,6 +77,9 @@ func (UnimplementedUsersServer) SignUp(context.Context, *SignUpRequest) (*Respon
 }
 func (UnimplementedUsersServer) SignIn(context.Context, *SignInRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SignIn not implemented")
+}
+func (UnimplementedUsersServer) Authenticate(context.Context, *AuthRequest) (*AuthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
 }
 func (UnimplementedUsersServer) mustEmbedUnimplementedUsersServer() {}
 
@@ -116,6 +130,24 @@ func _Users_SignIn_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Users_Authenticate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AuthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).Authenticate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Users/Authenticate",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).Authenticate(ctx, req.(*AuthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Users_ServiceDesc is the grpc.ServiceDesc for Users service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -130,6 +162,10 @@ var Users_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SignIn",
 			Handler:    _Users_SignIn_Handler,
+		},
+		{
+			MethodName: "Authenticate",
+			Handler:    _Users_Authenticate_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
