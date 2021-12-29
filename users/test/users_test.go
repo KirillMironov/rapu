@@ -21,17 +21,34 @@ import (
 	"time"
 )
 
-const (
-	tokenTTL = time.Minute
-	jwtKey   = "secretKey"
-)
+const jwtKey = "secretKey"
 
 var ctx = context.Background()
 
 func TestUsers_SignUp(t *testing.T) {
 	db, container := postgresSetup(t)
 	defer container.Terminate(ctx)
-	svc := usersServiceSetup(t, db)
+	svc := usersServiceSetup(t, db, time.Minute)
+
+	var user = domain.User{
+		Username: "Lisa",
+		Email:    "lisa@gmail.com",
+		Password: "qwerty",
+	}
+
+	token, err := svc.SignUp(user)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	token, err = svc.SignUp(user)
+	assert.Error(t, err)
+	assert.Empty(t, token)
+}
+
+func TestUsers_SignIn(t *testing.T) {
+	db, container := postgresSetup(t)
+	defer container.Terminate(ctx)
+	svc := usersServiceSetup(t, db, time.Minute)
 
 	var user = domain.User{
 		Username: "Lisa",
@@ -50,9 +67,42 @@ func TestUsers_SignUp(t *testing.T) {
 	token, err = svc.SignIn(user)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, token)
+
+	token, err = svc.SignIn(domain.User{
+		Email:    user.Email,
+		Password: "a",
+	})
+	assert.Error(t, err)
+	assert.Empty(t, token)
 }
 
-func usersServiceSetup(t *testing.T, db *sqlx.DB) domain.UsersService {
+func TestUsers_Authenticate(t *testing.T) {
+	db, container := postgresSetup(t)
+	defer container.Terminate(ctx)
+	svc := usersServiceSetup(t, db, time.Millisecond*50)
+
+	var user = domain.User{
+		Username: "Lisa",
+		Email:    "lisa@gmail.com",
+		Password: "qwerty",
+	}
+
+	token, err := svc.SignUp(user)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	userId, err := svc.Authenticate(token)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, userId)
+
+	time.Sleep(time.Second)
+
+	userId, err = svc.Authenticate(token)
+	assert.Error(t, err)
+	assert.Empty(t, userId)
+}
+
+func usersServiceSetup(t *testing.T, db *sqlx.DB, tokenTTL time.Duration) domain.UsersService {
 	manager, err := auth.NewManager(jwtKey, tokenTTL)
 	if err != nil {
 		t.Fatal(err)

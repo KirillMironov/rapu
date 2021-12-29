@@ -32,9 +32,9 @@ func (u *UsersRepository) Create(user domain.User) (string, error) {
 	return userId, tx.Commit()
 }
 
-func (u *UsersRepository) GetByEmail(user domain.User) (string, string, error) {
+func (u *UsersRepository) GetByEmail(email string) (domain.User, error) {
 	var sqlStr = "SELECT id, password FROM users WHERE email = $1"
-	var userId, password string
+	var user domain.User
 
-	return userId, password, u.db.QueryRowx(sqlStr, user.Email).Scan(&userId, &password)
+	return user, u.db.QueryRowx(sqlStr, email).Scan(&user.Id, &user.Password)
 }
