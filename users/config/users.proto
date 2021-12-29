@@ -5,6 +5,7 @@ option go_package = "./;proto";
 service Users {
   rpc SignUp(SignUpRequest) returns (Response) {}
   rpc SignIn(SignInRequest) returns (Response) {}
+  rpc Authenticate(AuthRequest) returns (AuthResponse) {}
 }
 
 message SignUpRequest {
@@ -19,5 +20,13 @@ message SignInRequest {
 }
 
 message Response {
-  string accessToken = 1;
+  string access_token = 1;
+}
+
+message AuthRequest {
+  string access_token = 1;
+}
+
+message AuthResponse {
+  string user_id = 1;
 }

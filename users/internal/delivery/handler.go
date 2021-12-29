@@ -5,6 +5,8 @@ import (
 	"github.com/KirillMironov/rapu/domain"
 	"github.com/KirillMironov/rapu/internal/delivery/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -14,9 +16,7 @@ type Handler struct {
 
 func NewHandler(usersService domain.UsersService) *grpc.Server {
 	var server = grpc.NewServer()
-	proto.RegisterUsersServer(server, &Handler{
-		service: usersService,
-	})
+	proto.RegisterUsersServer(server, &Handler{service: usersService})
 	return server
 }
 
@@ -47,4 +47,13 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 	}
 
 	return &proto.Response{AccessToken: token}, nil
+}
+
+func (h *Handler) Authenticate(ctx context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
+	userId, err := h.service.Authenticate(request.AccessToken)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	return &proto.AuthResponse{UserId: userId}, nil
 }
