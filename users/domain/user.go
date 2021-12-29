@@ -10,6 +10,7 @@ type User struct {
 type UsersService interface {
 	SignUp(User) (string, error)
 	SignIn(User) (string, error)
+	Authenticate(token string) (string, error)
 }
 
 type UsersRepository interface {
