@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"github.com/KirillMironov/rapu/domain"
+	"github.com/KirillMironov/rapu/users/domain"
 	"github.com/jmoiron/sqlx"
 	"time"
 )

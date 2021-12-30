@@ -1,8 +1,8 @@
 package service
 
 import (
-	"github.com/KirillMironov/rapu/domain"
-	"github.com/KirillMironov/rapu/pkg/auth"
+	"github.com/KirillMironov/rapu/users/domain"
+	"github.com/KirillMironov/rapu/users/pkg/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
