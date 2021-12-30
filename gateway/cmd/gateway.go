@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/KirillMironov/rapu/gateway/config"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"google.golang.org/grpc"
@@ -8,14 +9,16 @@ import (
 	"log"
 )
 
-const (
-	port          = "7002"
-	serverAddress = "localhost:7001"
-)
-
 func main() {
+	// Config
+	cfg, err := config.InitConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// GRPC Client
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	conn, err := grpc.Dial(serverAddress, opts...)
+	conn, err := grpc.Dial(cfg.ServerAddress, opts...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -23,7 +26,8 @@ func main() {
 
 	client := proto.NewUsersClient(conn)
 
+	// App
 	handler := delivery.NewHandler(client)
-	log.Printf("gateway started on port %s", port)
-	log.Fatal(handler.InitRoutes().Run(":" + port))
+	log.Printf("gateway started on port %s", cfg.Port)
+	log.Fatal(handler.InitRoutes().Run(":" + cfg.Port))
 }
