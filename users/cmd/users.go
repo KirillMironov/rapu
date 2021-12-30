@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/KirillMironov/rapu/config"
-	"github.com/KirillMironov/rapu/internal/delivery"
-	"github.com/KirillMironov/rapu/internal/repository/postgres"
-	"github.com/KirillMironov/rapu/internal/service"
-	"github.com/KirillMironov/rapu/pkg/auth"
+	"github.com/KirillMironov/rapu/users/config"
+	"github.com/KirillMironov/rapu/users/internal/delivery"
+	"github.com/KirillMironov/rapu/users/internal/repository/postgres"
+	"github.com/KirillMironov/rapu/users/internal/service"
+	"github.com/KirillMironov/rapu/users/pkg/auth"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
