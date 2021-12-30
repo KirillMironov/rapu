@@ -34,7 +34,7 @@ func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*pr
 
 	token, err := h.service.SignUp(user)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Info(err)
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 
 	token, err := h.service.SignIn(user)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Info(err)
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 func (h *Handler) Authenticate(ctx context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
 	userId, err := h.service.Authenticate(request.AccessToken)
 	if err != nil {
-		h.logger.Error(err)
+		h.logger.Info(err)
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
