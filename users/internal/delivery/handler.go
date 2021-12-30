@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/domain"
 	"github.com/KirillMironov/rapu/internal/delivery/proto"
+	"github.com/KirillMironov/rapu/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -11,12 +12,16 @@ import (
 
 type Handler struct {
 	service domain.UsersService
+	logger  logger.Logger
 	proto.UnimplementedUsersServer
 }
 
-func NewHandler(usersService domain.UsersService) *grpc.Server {
+func NewHandler(usersService domain.UsersService, logger logger.Logger) *grpc.Server {
 	var server = grpc.NewServer()
-	proto.RegisterUsersServer(server, &Handler{service: usersService})
+	proto.RegisterUsersServer(server, &Handler{
+		service: usersService,
+		logger:  logger,
+	})
 	return server
 }
 
@@ -29,6 +34,7 @@ func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*pr
 
 	token, err := h.service.SignUp(user)
 	if err != nil {
+		h.logger.Error(err)
 		return nil, err
 	}
 
@@ -43,6 +49,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 
 	token, err := h.service.SignIn(user)
 	if err != nil {
+		h.logger.Error(err)
 		return nil, err
 	}
 
@@ -52,6 +59,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 func (h *Handler) Authenticate(ctx context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
 	userId, err := h.service.Authenticate(request.AccessToken)
 	if err != nil {
+		h.logger.Error(err)
 		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
