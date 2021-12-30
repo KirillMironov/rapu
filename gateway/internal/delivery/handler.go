@@ -8,17 +8,9 @@ import (
 	"net/http"
 )
 
-type (
-	signUpCredentials struct {
-		Username string `json:"username" binding:"required"`
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
-
-	signInCredentials struct {
-		Email    string `json:"email" binding:"required"`
-		Password string `json:"password" binding:"required"`
-	}
+const (
+	accessToken = "access_token"
+	userId      = "user_id"
 )
 
 type Handler struct {
@@ -47,7 +39,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 }
 
 func (h *Handler) signUp(c *gin.Context) {
-	var credentials signUpCredentials
+	var credentials struct {
+		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
 	err := c.BindJSON(&credentials)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -61,15 +58,20 @@ func (h *Handler) signUp(c *gin.Context) {
 		Password: credentials.Password,
 	})
 	if err != nil {
-		log.Println(err)
 		c.Status(http.StatusUnauthorized)
+		log.Println(err)
+		return
 	}
 
-	c.JSON(http.StatusCreated, resp.AccessToken)
+	c.JSON(http.StatusCreated, map[string]string{accessToken: resp.AccessToken})
 }
 
 func (h *Handler) signIn(c *gin.Context) {
-	var credentials signInCredentials
+	var credentials struct {
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
+
 	err := c.BindJSON(&credentials)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
@@ -82,11 +84,12 @@ func (h *Handler) signIn(c *gin.Context) {
 		Password: credentials.Password,
 	})
 	if err != nil {
-		log.Println(err)
 		c.Status(http.StatusUnauthorized)
+		log.Println(err)
+		return
 	}
 
-	c.JSON(http.StatusOK, resp.AccessToken)
+	c.JSON(http.StatusOK, map[string]string{accessToken: resp.AccessToken})
 }
 
 func (h *Handler) auth(c *gin.Context) {
@@ -100,9 +103,10 @@ func (h *Handler) auth(c *gin.Context) {
 		AccessToken: token,
 	})
 	if err != nil {
-		log.Println(err)
 		c.Status(http.StatusUnauthorized)
+		log.Println(err)
+		return
 	}
 
-	c.JSON(http.StatusOK, resp.UserId)
+	c.JSON(http.StatusOK, map[string]string{userId: resp.UserId})
 }
