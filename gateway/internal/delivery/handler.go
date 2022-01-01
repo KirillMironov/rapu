@@ -3,8 +3,8 @@ package delivery
 import (
 	"context"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 )
 
@@ -15,15 +15,17 @@ const (
 
 type Handler struct {
 	client proto.UsersClient
+	logger logger.Logger
 }
 
-func NewHandler(client proto.UsersClient) *Handler {
-	return &Handler{client: client}
+func NewHandler(client proto.UsersClient, logger logger.Logger) *Handler {
+	return &Handler{client: client, logger: logger}
 }
 
 func (h *Handler) InitRoutes() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
 
 	v1 := r.Group("/api/v1")
 	{
@@ -48,7 +50,7 @@ func (h *Handler) signUp(c *gin.Context) {
 	err := c.BindJSON(&credentials)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		log.Println(err)
+		h.logger.Info(err)
 		return
 	}
 
@@ -59,7 +61,7 @@ func (h *Handler) signUp(c *gin.Context) {
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
-		log.Println(err)
+		h.logger.Info(err)
 		return
 	}
 
@@ -75,7 +77,7 @@ func (h *Handler) signIn(c *gin.Context) {
 	err := c.BindJSON(&credentials)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		log.Println(err)
+		h.logger.Info(err)
 		return
 	}
 
@@ -85,7 +87,7 @@ func (h *Handler) signIn(c *gin.Context) {
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
-		log.Println(err)
+		h.logger.Info(err)
 		return
 	}
 
@@ -95,7 +97,7 @@ func (h *Handler) signIn(c *gin.Context) {
 func (h *Handler) auth(c *gin.Context) {
 	token, ok := c.GetQuery("token")
 	if !ok {
-		c.Status(http.StatusBadRequest)
+		h.logger.Info(http.StatusBadRequest)
 		return
 	}
 
@@ -104,7 +106,7 @@ func (h *Handler) auth(c *gin.Context) {
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
-		log.Println(err)
+		h.logger.Info(err)
 		return
 	}
 
