@@ -2,6 +2,36 @@ version: '2.7'
 
 services:
 
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: rapu-gateway
+    environment:
+      - PORT=7002
+      - SERVER_ADDRESS=rapu-users:7001
+    ports:
+      - '7002:7002'
+    depends_on:
+      users:
+        condition: service_started
+
+  users:
+    build:
+      context: ./users
+      dockerfile: Dockerfile
+    container_name: rapu-users
+    environment:
+      - PORT=7001
+      - POSTGRES_CONNECTION_STRING=postgres://postgres:postgres@rapu-users_postgres:5432/users?sslmode=disable
+      - TOKEN_TTL=60m
+      - JWT_KEY=qwerty123
+    ports:
+      - '7001:7001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:12.7-alpine3.14
     container_name: rapu-users_postgres
