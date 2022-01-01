@@ -58,7 +58,7 @@ func main() {
 	usersService := service.NewUsersService(usersRepo, tokenManager)
 	handler := delivery.NewHandler(usersService, logger)
 
-	listener, err := net.Listen("tcp", "localhost:"+cfg.Port)
+	listener, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
 		logger.Fatal(err)
 	}
