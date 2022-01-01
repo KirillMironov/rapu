@@ -79,7 +79,7 @@ func TestUsers_SignIn(t *testing.T) {
 func TestUsers_Authenticate(t *testing.T) {
 	db, container := postgresSetup(t)
 	defer container.Terminate(ctx)
-	svc := usersServiceSetup(t, db, time.Millisecond*500)
+	svc := usersServiceSetup(t, db, time.Second)
 
 	var user = domain.User{
 		Username: "Lisa",
