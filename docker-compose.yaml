@@ -1,0 +1,25 @@
+version: '2.7'
+
+services:
+
+  postgres:
+    image: postgres:12.7-alpine3.14
+    container_name: rapu-users_postgres
+    environment:
+      - POSTGRES_DB=users
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - '5432:5432'
+    volumes:
+      - rapu-users_pgdata:/var/lib/postgresql/data
+      - ./users/config/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ 'CMD-SHELL', 'pg_isready -U $${POSTGRES_USER}' ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
+volumes:
+  rapu-users_pgdata:
+    name: rapu-users_pgdata

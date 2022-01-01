@@ -113,7 +113,7 @@ func usersServiceSetup(t *testing.T, db *sqlx.DB, tokenTTL time.Duration) domain
 
 func postgresSetup(t *testing.T) (*sqlx.DB, testcontainers.Container) {
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:13.0",
+		Image:        "postgres:12.7-alpine3.14",
 		ExposedPorts: []string{"5432"},
 		Env:          map[string]string{"POSTGRES_PASSWORD": "postgres"},
 		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
