@@ -2,7 +2,8 @@ package auth
 
 import (
 	"errors"
-	"github.com/dgrijalva/jwt-go"
+	"fmt"
+	"github.com/golang-jwt/jwt/v4"
 	"time"
 )
 
@@ -24,10 +25,12 @@ func NewManager(JWTKey string, tokenTTL time.Duration) (*Manager, error) {
 }
 
 func (m Manager) GenerateAuthToken(userId string) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+	currentTime := time.Now()
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   userId,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(m.TokenTTL).Unix(),
+		ExpiresAt: jwt.NewNumericDate(currentTime.Add(m.TokenTTL)),
+		IssuedAt:  jwt.NewNumericDate(currentTime),
 	})
 
 	return token.SignedString([]byte(m.JWTKey))
@@ -35,11 +38,17 @@ func (m Manager) GenerateAuthToken(userId string) (string, error) {
 
 func (m Manager) VerifyAuthToken(token string) (string, error) {
 	tkn, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
 		return []byte(m.JWTKey), nil
 	})
 	if err != nil {
 		return "", err
 	}
 
-	return tkn.Claims.(jwt.MapClaims)["sub"].(string), nil
+	if claims, ok := tkn.Claims.(jwt.MapClaims); ok && tkn.Valid {
+		return claims["sub"].(string), nil
+	}
+	return "", errors.New("token is not valid")
 }
