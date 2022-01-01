@@ -16,4 +16,3 @@ proto:
 
 lint:
 	golangci-lint run
-
