@@ -26,8 +26,6 @@ services:
       - POSTGRES_CONNECTION_STRING=postgres://postgres:postgres@rapu-users_postgres:5432/users?sslmode=disable
       - TOKEN_TTL=60m
       - JWT_KEY=qwerty123
-    ports:
-      - '7001:7001'
     depends_on:
       postgres:
         condition: service_healthy
