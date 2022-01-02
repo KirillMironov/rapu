@@ -1,12 +1,24 @@
-package test
+package delivery
 
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/KirillMironov/rapu/gateway/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+)
+
+const (
+	email    = "lisa@gmail.com"
+	password = "qwerty"
+	username = "Lisa"
+)
+
+var (
+	handler = NewHandler(mocks.UsersClientMock{}, mocks.LoggerMock{})
+	router  = handler.InitRoutes()
 )
 
 func TestHandler_signUp(t *testing.T) {
@@ -22,13 +34,13 @@ func TestHandler_signUp(t *testing.T) {
 		body               credentials
 		expectedStatusCode int
 	}{
-		{credentials{"lisa@gmail.com", "qwerty", "Lisa"}, http.StatusCreated},
-		{credentials{"", "qwerty", "Lisa"}, http.StatusBadRequest},
-		{credentials{"lisa@gmail.com", "", "Lisa"}, http.StatusBadRequest},
-		{credentials{"lisa@gmail.com", "qwerty", ""}, http.StatusBadRequest},
-		{credentials{"lisa@gmail.com", "qwerty", ""}, http.StatusBadRequest},
-		{credentials{"lisa@gmail.com", "", "Lisa"}, http.StatusBadRequest},
-		{credentials{"", "qwerty", "Lisa"}, http.StatusBadRequest},
+		{credentials{email, password, username}, http.StatusCreated},
+		{credentials{"", password, username}, http.StatusBadRequest},
+		{credentials{email, "", username}, http.StatusBadRequest},
+		{credentials{email, password, ""}, http.StatusBadRequest},
+		{credentials{email, password, ""}, http.StatusBadRequest},
+		{credentials{email, "", username}, http.StatusBadRequest},
+		{credentials{"", password, username}, http.StatusBadRequest},
 		{credentials{"", "", ""}, http.StatusBadRequest},
 	}
 	for _, tc := range testCases {
@@ -57,9 +69,9 @@ func TestHandler_signIn(t *testing.T) {
 		body               credentials
 		expectedStatusCode int
 	}{
-		{credentials{"lisa@gmail.com", "qwerty"}, http.StatusOK},
-		{credentials{"lisa@gmail.com", ""}, http.StatusBadRequest},
-		{credentials{"", "qwerty"}, http.StatusBadRequest},
+		{credentials{email, password}, http.StatusOK},
+		{credentials{email, ""}, http.StatusBadRequest},
+		{credentials{"", password}, http.StatusBadRequest},
 		{credentials{"", ""}, http.StatusBadRequest},
 	}
 	for _, tc := range testCases {
