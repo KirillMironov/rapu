@@ -65,7 +65,7 @@ func (h *Handler) signUp(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, map[string]string{accessToken: resp.AccessToken})
+	c.JSON(http.StatusCreated, map[string]string{accessToken: resp.GetAccessToken()})
 }
 
 func (h *Handler) signIn(c *gin.Context) {
@@ -91,13 +91,14 @@ func (h *Handler) signIn(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]string{accessToken: resp.AccessToken})
+	c.JSON(http.StatusOK, map[string]string{accessToken: resp.GetAccessToken()})
 }
 
 func (h *Handler) auth(c *gin.Context) {
-	token, ok := c.GetQuery("token")
-	if !ok {
-		h.logger.Info(http.StatusBadRequest)
+	token := c.Query("token")
+	if token == "" {
+		c.Status(http.StatusBadRequest)
+		h.logger.Info("access token was not provided")
 		return
 	}
 
@@ -110,5 +111,5 @@ func (h *Handler) auth(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, map[string]string{userId: resp.UserId})
+	c.JSON(http.StatusOK, map[string]string{userId: resp.GetUserId()})
 }
