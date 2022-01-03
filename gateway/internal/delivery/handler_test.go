@@ -24,28 +24,30 @@ var (
 func TestHandler_signUp(t *testing.T) {
 	t.Parallel()
 
-	type credentials struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
 	testCases := []struct {
-		body               credentials
+		username           string
+		email              string
+		password           string
 		expectedStatusCode int
 	}{
-		{credentials{email, password, username}, http.StatusCreated},
-		{credentials{"", password, username}, http.StatusBadRequest},
-		{credentials{email, "", username}, http.StatusBadRequest},
-		{credentials{email, password, ""}, http.StatusBadRequest},
-		{credentials{email, password, ""}, http.StatusBadRequest},
-		{credentials{email, "", username}, http.StatusBadRequest},
-		{credentials{"", password, username}, http.StatusBadRequest},
-		{credentials{"", "", ""}, http.StatusBadRequest},
+		{username, email, password, http.StatusCreated},
+		{"", email, password, http.StatusBadRequest},
+		{username, "", password, http.StatusBadRequest},
+		{username, email, "", http.StatusBadRequest},
+		{"", "", password, http.StatusBadRequest},
+		{"", email, "", http.StatusBadRequest},
+		{username, "", "", http.StatusBadRequest},
+		{"", "", "", http.StatusBadRequest},
 	}
+
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.body)
+
+		body, err := json.Marshal(struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}{tc.username, tc.email, tc.password})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -60,23 +62,24 @@ func TestHandler_signUp(t *testing.T) {
 func TestHandler_signIn(t *testing.T) {
 	t.Parallel()
 
-	type credentials struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
 	testCases := []struct {
-		body               credentials
+		email              string
+		password           string
 		expectedStatusCode int
 	}{
-		{credentials{email, password}, http.StatusOK},
-		{credentials{email, ""}, http.StatusBadRequest},
-		{credentials{"", password}, http.StatusBadRequest},
-		{credentials{"", ""}, http.StatusBadRequest},
+		{email, password, http.StatusOK},
+		{"", password, http.StatusBadRequest},
+		{email, "", http.StatusBadRequest},
+		{"", "", http.StatusBadRequest},
 	}
+
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.body)
+
+		body, err := json.Marshal(struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}{tc.email, tc.password})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -98,6 +101,7 @@ func TestHandler_auth(t *testing.T) {
 		{"token", http.StatusOK},
 		{"", http.StatusBadRequest},
 	}
+
 	for _, tc := range testCases {
 		tc := tc
 

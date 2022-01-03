@@ -80,8 +80,8 @@ func TestHandler_SignUp(t *testing.T) {
 			Password: tc.password,
 		})
 
-		e, _ := status.FromError(err)
-		assert.Equal(t, tc.expectedStatusCode, e.Code())
+		errStatus, _ := status.FromError(err)
+		assert.Equal(t, tc.expectedStatusCode, errStatus.Code())
 
 		if tc.expectedStatusCode == codes.OK {
 			assert.NotEmpty(t, resp.GetAccessToken())
@@ -116,8 +116,8 @@ func TestHandler_SignIn(t *testing.T) {
 			Password: tc.password,
 		})
 
-		e, _ := status.FromError(err)
-		assert.Equal(t, tc.expectedStatusCode, e.Code())
+		errStatus, _ := status.FromError(err)
+		assert.Equal(t, tc.expectedStatusCode, errStatus.Code())
 
 		if tc.expectedStatusCode == codes.OK {
 			assert.NotEmpty(t, resp.GetAccessToken())
@@ -146,8 +146,8 @@ func TestHandler_Authenticate(t *testing.T) {
 
 		resp, err := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: tc.token})
 
-		e, _ := status.FromError(err)
-		assert.Equal(t, tc.expectedStatusCode, e.Code())
+		errStatus, _ := status.FromError(err)
+		assert.Equal(t, tc.expectedStatusCode, errStatus.Code())
 
 		if tc.expectedStatusCode == codes.OK {
 			assert.NotEmpty(t, resp.GetUserId())
