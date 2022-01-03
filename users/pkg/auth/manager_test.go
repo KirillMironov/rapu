@@ -9,7 +9,7 @@ import (
 const (
 	userId   = "111"
 	JWTKey   = "abc123"
-	tokenTTL = time.Duration(60 * int64(time.Minute))
+	tokenTTL = time.Minute * 60
 )
 
 func TestManager(t *testing.T) {
