@@ -10,6 +10,8 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const notEnoughArgs = "not enough arguments"
+
 type Handler struct {
 	service domain.UsersService
 	logger  logger.Logger
@@ -26,6 +28,10 @@ func NewHandler(usersService domain.UsersService, logger logger.Logger) *grpc.Se
 }
 
 func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
+	if request.GetUsername() == "" || request.GetEmail() == "" || request.GetPassword() == "" {
+		return nil, status.Error(codes.InvalidArgument, notEnoughArgs)
+	}
+
 	var user = domain.User{
 		Username: request.Username,
 		Email:    request.Email,
@@ -42,6 +48,10 @@ func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*pr
 }
 
 func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*proto.Response, error) {
+	if request.GetEmail() == "" || request.GetPassword() == "" {
+		return nil, status.Error(codes.InvalidArgument, notEnoughArgs)
+	}
+
 	var user = domain.User{
 		Email:    request.Email,
 		Password: request.Password,
@@ -57,6 +67,10 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 }
 
 func (h *Handler) Authenticate(ctx context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
+	if request.GetAccessToken() == "" {
+		return nil, status.Error(codes.InvalidArgument, notEnoughArgs)
+	}
+
 	userId, err := h.service.Authenticate(request.AccessToken)
 	if err != nil {
 		h.logger.Info(err)
