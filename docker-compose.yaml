@@ -48,6 +48,25 @@ services:
       timeout: 10s
       retries: 10
 
+  mongo:
+    image: mongo:4.4-rc-focal
+    container_name: rapu-posts_mongo
+    environment:
+      - MONGO_INITDB_DATABASE=posts
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - rapu-posts_mongodata:/data/db
+    healthcheck:
+      test: [ 'CMD-SHELL', 'echo', 'db.runCommand("ping").ok | mongo --quiet' ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
 volumes:
   rapu-users_pgdata:
     name: rapu-users_pgdata
+  rapu-posts_mongodata:
+    name: rapu-posts_mongodata
