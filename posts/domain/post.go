@@ -1,12 +1,15 @@
 package domain
 
-import "time"
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
+)
 
 type Post struct {
-	Id        string    `bson:"_id"`
-	UserId    string    `bson:"user_id"`
-	Message   string    `bson:"message"`
-	CreatedAt time.Time `bson:"created_at"`
+	Id        primitive.ObjectID `bson:"_id"`
+	UserId    string             `bson:"user_id"`
+	Message   string             `bson:"message"`
+	CreatedAt time.Time          `bson:"created_at"`
 }
 
 type PostsRepository interface {
