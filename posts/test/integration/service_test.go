@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/KirillMironov/rapu/posts/domain"
 	_mongo "github.com/KirillMironov/rapu/posts/internal/repository/mongo"
+	"github.com/KirillMironov/rapu/posts/internal/service"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -40,24 +41,22 @@ func TestPosts_Create(t *testing.T) {
 	}
 
 	repo := _mongo.NewPostsRepository(db)
+	svc := service.NewPostsService(repo, 10)
 
-	id, err := repo.Create(post)
+	err = svc.Create(post)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, id)
 
-	id, err = repo.Create(post)
+	err = svc.Create(post)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, id)
 
-	id, err = repo.Create(domain.Post{
+	err = svc.Create(domain.Post{
 		UserId:    "2",
 		Message:   "Empty",
 		CreatedAt: time.Now(),
 	})
 	assert.NoError(t, err)
-	assert.NotEmpty(t, id)
 
-	posts, err := repo.GetByUserId(userId)
+	posts, err := svc.GetByUserId(userId, "", 0)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(posts))
 	assert.NotEmpty(t, posts[0])
@@ -72,18 +71,19 @@ func TestPosts_GetByUserId(t *testing.T) {
 	}
 
 	repo := _mongo.NewPostsRepository(db)
+	svc := service.NewPostsService(repo, 10)
 
-	_, err = repo.Create(post)
+	err = svc.Create(post)
 	assert.NoError(t, err)
 
-	_, err = repo.Create(domain.Post{
+	err = svc.Create(domain.Post{
 		UserId:    userId,
 		Message:   "New post",
 		CreatedAt: time.Now().Add(time.Hour),
 	})
 	assert.NoError(t, err)
 
-	posts, err := repo.GetByUserId(userId)
+	posts, err := svc.GetByUserId(userId, "", 0)
 	assert.NoError(t, err)
 	assert.True(t, posts[0].CreatedAt.After(posts[1].CreatedAt))
 }
