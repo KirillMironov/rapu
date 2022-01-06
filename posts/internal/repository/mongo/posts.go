@@ -41,6 +41,7 @@ func (p *PostsRepository) GetByUserId(userId, offset string, limit int64) ([]dom
 	if err != nil {
 		return nil, err
 	}
+	defer cur.Close(ctx)
 
 	var posts []domain.Post
 	return posts, cur.All(ctx, &posts)
