@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PostsClient interface {
 	Create(ctx context.Context, in *CreateRequest, opts ...grpc.CallOption) (*CreateResponse, error)
-	GetByUserId(ctx context.Context, in *GetByUserIdRequest, opts ...grpc.CallOption) (Posts_GetByUserIdClient, error)
+	GetByUserId(ctx context.Context, in *GetByUserIdRequest, opts ...grpc.CallOption) (*GetByUserIdResponse, error)
 }
 
 type postsClient struct {
@@ -39,36 +39,13 @@ func (c *postsClient) Create(ctx context.Context, in *CreateRequest, opts ...grp
 	return out, nil
 }
 
-func (c *postsClient) GetByUserId(ctx context.Context, in *GetByUserIdRequest, opts ...grpc.CallOption) (Posts_GetByUserIdClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Posts_ServiceDesc.Streams[0], "/proto.Posts/GetByUserId", opts...)
+func (c *postsClient) GetByUserId(ctx context.Context, in *GetByUserIdRequest, opts ...grpc.CallOption) (*GetByUserIdResponse, error) {
+	out := new(GetByUserIdResponse)
+	err := c.cc.Invoke(ctx, "/proto.Posts/GetByUserId", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &postsGetByUserIdClient{stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-type Posts_GetByUserIdClient interface {
-	Recv() (*Post, error)
-	grpc.ClientStream
-}
-
-type postsGetByUserIdClient struct {
-	grpc.ClientStream
-}
-
-func (x *postsGetByUserIdClient) Recv() (*Post, error) {
-	m := new(Post)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // PostsServer is the server API for Posts service.
@@ -76,7 +53,7 @@ func (x *postsGetByUserIdClient) Recv() (*Post, error) {
 // for forward compatibility
 type PostsServer interface {
 	Create(context.Context, *CreateRequest) (*CreateResponse, error)
-	GetByUserId(*GetByUserIdRequest, Posts_GetByUserIdServer) error
+	GetByUserId(context.Context, *GetByUserIdRequest) (*GetByUserIdResponse, error)
 	mustEmbedUnimplementedPostsServer()
 }
 
@@ -87,8 +64,8 @@ type UnimplementedPostsServer struct {
 func (UnimplementedPostsServer) Create(context.Context, *CreateRequest) (*CreateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedPostsServer) GetByUserId(*GetByUserIdRequest, Posts_GetByUserIdServer) error {
-	return status.Errorf(codes.Unimplemented, "method GetByUserId not implemented")
+func (UnimplementedPostsServer) GetByUserId(context.Context, *GetByUserIdRequest) (*GetByUserIdResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetByUserId not implemented")
 }
 func (UnimplementedPostsServer) mustEmbedUnimplementedPostsServer() {}
 
@@ -121,25 +98,22 @@ func _Posts_Create_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Posts_GetByUserId_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(GetByUserIdRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
+func _Posts_GetByUserId_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByUserIdRequest)
+	if err := dec(in); err != nil {
+		return nil, err
 	}
-	return srv.(PostsServer).GetByUserId(m, &postsGetByUserIdServer{stream})
-}
-
-type Posts_GetByUserIdServer interface {
-	Send(*Post) error
-	grpc.ServerStream
-}
-
-type postsGetByUserIdServer struct {
-	grpc.ServerStream
-}
-
-func (x *postsGetByUserIdServer) Send(m *Post) error {
-	return x.ServerStream.SendMsg(m)
+	if interceptor == nil {
+		return srv.(PostsServer).GetByUserId(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Posts/GetByUserId",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostsServer).GetByUserId(ctx, req.(*GetByUserIdRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // Posts_ServiceDesc is the grpc.ServiceDesc for Posts service.
@@ -153,13 +127,11 @@ var Posts_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Create",
 			Handler:    _Posts_Create_Handler,
 		},
-	},
-	Streams: []grpc.StreamDesc{
 		{
-			StreamName:    "GetByUserId",
-			Handler:       _Posts_GetByUserId_Handler,
-			ServerStreams: true,
+			MethodName: "GetByUserId",
+			Handler:    _Posts_GetByUserId_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "config/posts.proto",
 }
