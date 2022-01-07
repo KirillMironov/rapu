@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	handler = NewHandler(mocks.UsersClientMock{}, mocks.LoggerMock{})
+	handler = NewHandler(mocks.UsersClientMock{}, mocks.PostsClientMock{}, mocks.LoggerMock{})
 	router  = handler.InitRoutes()
 )
 
@@ -48,12 +48,12 @@ func TestHandler_signUp(t *testing.T) {
 			Email    string `json:"email"`
 			Password string `json:"password"`
 		}{tc.username, tc.email, tc.password})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodPost, "/api/v1/users/sign-up", bytes.NewReader(body))
+		req, err := http.NewRequest(http.MethodPost, "/api/v1/users/sign-up", bytes.NewReader(body))
+		assert.NoError(t, err)
+
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
 	}
@@ -80,12 +80,12 @@ func TestHandler_signIn(t *testing.T) {
 			Email    string `json:"email"`
 			Password string `json:"password"`
 		}{tc.email, tc.password})
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodPost, "/api/v1/users/sign-in", bytes.NewReader(body))
+		req, err := http.NewRequest(http.MethodPost, "/api/v1/users/sign-in", bytes.NewReader(body))
+		assert.NoError(t, err)
+
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
 	}
@@ -105,8 +105,13 @@ func TestHandler_auth(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
+		body, err := json.Marshal(map[string]string{accessToken: tc.token})
+		assert.NoError(t, err)
+
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest(http.MethodGet, "/api/v1/users/auth?token="+tc.token, nil)
+		req, err := http.NewRequest(http.MethodPost, "/api/v1/users/auth", bytes.NewReader(body))
+		assert.NoError(t, err)
+
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
 	}
