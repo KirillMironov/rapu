@@ -15,6 +15,8 @@ services:
     depends_on:
       users:
         condition: service_started
+      posts:
+        condition: service_started
 
   users:
     build:
@@ -28,6 +30,21 @@ services:
       - JWT_KEY=qwerty123
     depends_on:
       postgres:
+        condition: service_healthy
+
+  posts:
+    build:
+      context: ./posts
+      dockerfile: Dockerfile
+    container_name: rapu-posts
+    environment:
+      - PORT=7003
+      - MONGO_CONNECTION_STRING=mongodb://mongo:mongo@rapu-posts_mongo:27017
+      - MONGO_DB_NAME=rapu
+      - MONGO_COLLECTION=posts
+      - MAX_POSTS_PER_PAGE=20
+    depends_on:
+      mongo:
         condition: service_healthy
 
   postgres:
@@ -52,7 +69,6 @@ services:
     image: mongo:4.4-rc-focal
     container_name: rapu-posts_mongo
     environment:
-      - MONGO_INITDB_DATABASE=posts
       - MONGO_INITDB_ROOT_USERNAME=mongo
       - MONGO_INITDB_ROOT_PASSWORD=mongo
     ports:
