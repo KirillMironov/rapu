@@ -11,9 +11,9 @@ import (
 )
 
 const (
-	email    = "lisa@gmail.com"
-	password = "qwerty"
-	username = "Lisa"
+	testEmail    = "lisa@gmail.com"
+	testPassword = "qwerty"
+	testUsername = "Lisa"
 )
 
 var (
@@ -25,29 +25,54 @@ func TestHandler_signUp(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		username           string
-		email              string
-		password           string
+		form               signUpForm
 		expectedStatusCode int
 	}{
-		{username, email, password, http.StatusCreated},
-		{"", email, password, http.StatusBadRequest},
-		{username, "", password, http.StatusBadRequest},
-		{username, email, "", http.StatusBadRequest},
-		{"", "", password, http.StatusBadRequest},
-		{"", email, "", http.StatusBadRequest},
-		{username, "", "", http.StatusBadRequest},
-		{"", "", "", http.StatusBadRequest},
+		{signUpForm{
+			Username: testUsername,
+			Email:    testEmail,
+			Password: testPassword,
+		}, http.StatusCreated},
+		{signUpForm{
+			Username: "",
+			Email:    testEmail,
+			Password: testPassword,
+		}, http.StatusBadRequest},
+		{signUpForm{
+			Username: testUsername,
+			Email:    "",
+			Password: testPassword,
+		}, http.StatusBadRequest},
+		{signUpForm{
+			Username: testUsername,
+			Email:    testEmail,
+			Password: "",
+		}, http.StatusBadRequest},
+		{signUpForm{
+			Username: "",
+			Email:    "",
+			Password: testPassword,
+		}, http.StatusBadRequest},
+		{signUpForm{
+			Username: "",
+			Email:    testEmail,
+			Password: "",
+		}, http.StatusBadRequest},
+		{signUpForm{
+			Username: testUsername,
+			Email:    "",
+			Password: "",
+		}, http.StatusBadRequest},
+		{signUpForm{
+			Username: "",
+			Email:    "",
+			Password: "",
+		}, http.StatusBadRequest},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-
-		body, err := json.Marshal(struct {
-			Username string `json:"username"`
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}{tc.username, tc.email, tc.password})
+		body, err := json.Marshal(tc.form)
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
@@ -63,23 +88,18 @@ func TestHandler_signIn(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		email              string
-		password           string
+		form               signInForm
 		expectedStatusCode int
 	}{
-		{email, password, http.StatusOK},
-		{"", password, http.StatusBadRequest},
-		{email, "", http.StatusBadRequest},
-		{"", "", http.StatusBadRequest},
+		{signInForm{Email: testEmail, Password: testPassword}, http.StatusOK},
+		{signInForm{Email: "", Password: testPassword}, http.StatusBadRequest},
+		{signInForm{Email: testEmail, Password: ""}, http.StatusBadRequest},
+		{signInForm{Email: "", Password: ""}, http.StatusBadRequest},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-
-		body, err := json.Marshal(struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}{tc.email, tc.password})
+		body, err := json.Marshal(tc.form)
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
@@ -95,17 +115,16 @@ func TestHandler_auth(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		token              string
+		form               authForm
 		expectedStatusCode int
 	}{
-		{"token", http.StatusOK},
-		{"", http.StatusBadRequest},
+		{authForm{AccessToken: "token"}, http.StatusOK},
+		{authForm{AccessToken: ""}, http.StatusBadRequest},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-
-		body, err := json.Marshal(map[string]string{accessToken: tc.token})
+		body, err := json.Marshal(tc.form)
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()

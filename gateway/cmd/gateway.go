@@ -38,18 +38,26 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	// GRPC Client
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-	conn, err := grpc.Dial(cfg.ServerAddress, opts...)
+	// gRPC Users client
+	usersConn, err := grpc.Dial(cfg.UsersServiceAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer conn.Close()
+	defer usersConn.Close()
 
-	client := proto.NewUsersClient(conn)
+	usersClient := proto.NewUsersClient(usersConn)
+
+	// gRPC Posts client
+	postsConn, err := grpc.Dial(cfg.PostsServiceAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer postsConn.Close()
+
+	postsClient := proto.NewPostsClient(postsConn)
 
 	// App
-	handler := delivery.NewHandler(client, logger)
+	handler := delivery.NewHandler(usersClient, postsClient, logger)
 	logger.Infof("gateway started on port %s", cfg.Port)
 	logger.Fatal(handler.InitRoutes().Run(":" + cfg.Port))
 }

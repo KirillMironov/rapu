@@ -12,25 +12,16 @@ const (
 	userId      = "user_id"
 )
 
-type signUpCredentials struct {
+type signUpForm struct {
 	Username string `json:"username" binding:"required"`
 	Email    string `json:"email" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
-type signInCredentials struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-type authRequest struct {
-	AccessToken string `json:"access_token" binding:"required"`
-}
-
 func (h *Handler) signUp(c *gin.Context) {
-	var credentials signUpCredentials
+	var form signUpForm
 
-	err := c.BindJSON(&credentials)
+	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		h.logger.Info(err)
@@ -38,9 +29,9 @@ func (h *Handler) signUp(c *gin.Context) {
 	}
 
 	resp, err := h.usersClient.SignUp(context.Background(), &proto.SignUpRequest{
-		Username: credentials.Username,
-		Email:    credentials.Email,
-		Password: credentials.Password,
+		Username: form.Username,
+		Email:    form.Email,
+		Password: form.Password,
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
@@ -51,10 +42,15 @@ func (h *Handler) signUp(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{accessToken: resp.GetAccessToken()})
 }
 
-func (h *Handler) signIn(c *gin.Context) {
-	var credentials signInCredentials
+type signInForm struct {
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
 
-	err := c.BindJSON(&credentials)
+func (h *Handler) signIn(c *gin.Context) {
+	var form signInForm
+
+	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		h.logger.Info(err)
@@ -62,8 +58,8 @@ func (h *Handler) signIn(c *gin.Context) {
 	}
 
 	resp, err := h.usersClient.SignIn(context.Background(), &proto.SignInRequest{
-		Email:    credentials.Email,
-		Password: credentials.Password,
+		Email:    form.Email,
+		Password: form.Password,
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
@@ -74,10 +70,14 @@ func (h *Handler) signIn(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{accessToken: resp.GetAccessToken()})
 }
 
-func (h *Handler) auth(c *gin.Context) {
-	var req authRequest
+type authForm struct {
+	AccessToken string `json:"access_token" binding:"required"`
+}
 
-	err := c.BindJSON(&req)
+func (h *Handler) auth(c *gin.Context) {
+	var form authForm
+
+	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		h.logger.Info("access token was not provided")
@@ -85,7 +85,7 @@ func (h *Handler) auth(c *gin.Context) {
 	}
 
 	resp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{
-		AccessToken: req.AccessToken,
+		AccessToken: form.AccessToken,
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
