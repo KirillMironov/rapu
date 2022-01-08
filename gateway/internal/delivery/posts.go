@@ -61,5 +61,5 @@ func (h *Handler) getPostsByUserId(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp.GetPosts())
+	c.String(http.StatusOK, string(resp.GetPosts()))
 }
