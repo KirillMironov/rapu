@@ -33,8 +33,10 @@ func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*pr
 	err := h.service.Create(post)
 	if err != nil {
 		h.logger.Info(err)
+		return nil, err
 	}
-	return nil, err
+
+	return &proto.CreateResponse{}, nil
 }
 
 func (h *Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
