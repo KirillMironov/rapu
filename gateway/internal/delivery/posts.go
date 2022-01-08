@@ -7,21 +7,15 @@ import (
 	"net/http"
 )
 
-type createPostRequest struct {
+type createPostForm struct {
 	UserId  string `json:"user_id" binding:"required"`
 	Message string `json:"message" binding:"required"`
 }
 
-type getByUserIdRequest struct {
-	UserId string `form:"userId" binding:"required"`
-	Offset string `form:"offset" binding:"required"`
-	Limit  int64  `form:"limit" binding:"required"`
-}
+func (h *Handler) createPost(c *gin.Context) {
+	var form createPostForm
 
-func (h *Handler) create(c *gin.Context) {
-	var req createPostRequest
-
-	err := c.BindJSON(&req)
+	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		h.logger.Info(err)
@@ -29,20 +23,27 @@ func (h *Handler) create(c *gin.Context) {
 	}
 
 	_, err = h.postsClient.Create(context.Background(), &proto.CreateRequest{
-		UserId:  req.UserId,
-		Message: req.Message,
+		UserId:  form.UserId,
+		Message: form.Message,
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
 		h.logger.Info(err)
 		return
 	}
+
+	c.Status(http.StatusCreated)
 }
 
-func (h *Handler) getByUserId(c *gin.Context) {
-	var req getByUserIdRequest
+type getPostsByUserIdForm struct {
+	Offset string `form:"offset"`
+	Limit  int64  `form:"limit"`
+}
 
-	err := c.Bind(&req)
+func (h *Handler) getPostsByUserId(c *gin.Context) {
+	var form getPostsByUserIdForm
+
+	err := c.Bind(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		h.logger.Info(err)
@@ -50,9 +51,9 @@ func (h *Handler) getByUserId(c *gin.Context) {
 	}
 
 	resp, err := h.postsClient.GetByUserId(context.Background(), &proto.GetByUserIdRequest{
-		UserId: req.UserId,
-		Offset: req.Offset,
-		Limit:  req.Limit,
+		UserId: c.Param("userId"),
+		Offset: form.Offset,
+		Limit:  form.Limit,
 	})
 	if err != nil {
 		c.Status(http.StatusUnauthorized)
@@ -60,5 +61,5 @@ func (h *Handler) getByUserId(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, resp.Posts)
+	c.JSON(http.StatusOK, resp.GetPosts())
 }

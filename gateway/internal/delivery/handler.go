@@ -33,10 +33,11 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			users.POST("/sign-in", h.signIn)
 			users.POST("/auth", h.auth)
 		}
+
 		posts := v1.Group("/posts")
 		{
-			posts.POST("", h.create)
-			posts.GET("", h.getByUserId)
+			posts.POST("", h.createPost)
+			posts.GET("/:userId", h.getPostsByUserId)
 		}
 	}
 

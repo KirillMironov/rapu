@@ -9,7 +9,8 @@ services:
     container_name: rapu-gateway
     environment:
       - PORT=7002
-      - SERVER_ADDRESS=rapu-users:7001
+      - USERS_SERVICE_ADDRESS=rapu-users:7001
+      - POSTS_SERVICE_ADDRESS=rapu-posts:7003
     ports:
       - '7002:7002'
     depends_on:
