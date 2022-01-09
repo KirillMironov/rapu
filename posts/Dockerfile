@@ -12,8 +12,8 @@ FROM modules AS builder
 ARG TARGETARCH
 ARG TARGETOS
 WORKDIR /app/cmd
-RUN GOARCH=$TARGETARCH GOOS=$TARGETOS CGO_ENABLED=0 go build -o gateway .
+RUN GOARCH=$TARGETARCH GOOS=$TARGETOS CGO_ENABLED=0 go build -o posts .
 
 FROM alpine:3.14
-COPY --from=builder /app/cmd/gateway ./gateway
-ENTRYPOINT ["./gateway"]
+COPY --from=builder /app/cmd/posts ./posts
+ENTRYPOINT ["./posts"]
