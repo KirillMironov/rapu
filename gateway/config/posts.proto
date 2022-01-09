@@ -1,0 +1,25 @@
+syntax = "proto3";
+package proto;
+option go_package = "./;proto";
+
+service Posts {
+  rpc Create(CreateRequest) returns (CreateResponse) {}
+  rpc GetByUserId(GetByUserIdRequest) returns (GetByUserIdResponse) {}
+}
+
+message CreateRequest {
+  string user_id = 1;
+  string message = 2;
+}
+
+message CreateResponse {}
+
+message GetByUserIdRequest {
+  string user_id = 1;
+  string offset = 2;
+  int64 limit = 3;
+}
+
+message GetByUserIdResponse {
+  bytes posts = 1;
+}

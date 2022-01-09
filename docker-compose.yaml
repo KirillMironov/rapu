@@ -9,11 +9,14 @@ services:
     container_name: rapu-gateway
     environment:
       - PORT=7002
-      - SERVER_ADDRESS=rapu-users:7001
+      - USERS_SERVICE_ADDRESS=rapu-users:7001
+      - POSTS_SERVICE_ADDRESS=rapu-posts:7003
     ports:
       - '7002:7002'
     depends_on:
       users:
+        condition: service_started
+      posts:
         condition: service_started
 
   users:
@@ -28,6 +31,21 @@ services:
       - JWT_KEY=qwerty123
     depends_on:
       postgres:
+        condition: service_healthy
+
+  posts:
+    build:
+      context: ./posts
+      dockerfile: Dockerfile
+    container_name: rapu-posts
+    environment:
+      - PORT=7003
+      - MONGO_CONNECTION_STRING=mongodb://mongo:mongo@rapu-posts_mongo:27017
+      - MONGO_DB_NAME=rapu
+      - MONGO_COLLECTION=posts
+      - MAX_POSTS_PER_PAGE=20
+    depends_on:
+      mongo:
         condition: service_healthy
 
   postgres:
@@ -48,6 +66,24 @@ services:
       timeout: 10s
       retries: 10
 
+  mongo:
+    image: mongo:4.4-rc-focal
+    container_name: rapu-posts_mongo
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - rapu-posts_mongodata:/data/db
+    healthcheck:
+      test: [ 'CMD-SHELL', 'echo', 'db.runCommand("ping").ok | mongo --quiet' ]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+
 volumes:
   rapu-users_pgdata:
     name: rapu-users_pgdata
+  rapu-posts_mongodata:
+    name: rapu-posts_mongodata
