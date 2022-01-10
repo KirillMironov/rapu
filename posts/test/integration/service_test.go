@@ -13,6 +13,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"log"
 	"testing"
 	"time"
 )
@@ -62,6 +63,8 @@ func TestPosts_Create(t *testing.T) {
 	assert.Equal(t, 2, len(posts))
 	assert.NotEmpty(t, posts[0])
 	assert.NotEmpty(t, posts[1])
+
+	log.Println(posts)
 
 	// Another UserId
 	posts, err = svc.GetByUserId("2", "", 0)
