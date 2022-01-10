@@ -20,8 +20,6 @@ func NewPostsRepository(db *mongo.Collection) *PostsRepository {
 }
 
 func (p *PostsRepository) Create(post domain.Post) error {
-	post.Id = primitive.NewObjectID()
-
 	_, err := p.db.InsertOne(ctx, post)
 	return err
 }

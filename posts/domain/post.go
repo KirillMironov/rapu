@@ -6,10 +6,10 @@ import (
 )
 
 type Post struct {
-	Id        primitive.ObjectID `bson:"_id" json:"id"`
-	UserId    string             `bson:"user_id" json:"user_id"`
-	Message   string             `bson:"message" json:"message"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	Id        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
+	UserId    string             `json:"user_id" bson:"user_id"`
+	Message   string             `json:"message" bson:"message"`
+	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
 
 type PostsService interface {
