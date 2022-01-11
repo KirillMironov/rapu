@@ -7,8 +7,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var errNotEnoughArgs = errors.New("not enough arguments")
-
 type UsersService struct {
 	repository   domain.UsersRepository
 	tokenManager auth.TokenManager
@@ -23,7 +21,7 @@ func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenM
 
 func (u *UsersService) SignUp(user domain.User) (string, error) {
 	if user.Username == "" || user.Email == "" || user.Password == "" {
-		return "", errNotEnoughArgs
+		return "", domain.ErrEmptyParameters
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -42,7 +40,7 @@ func (u *UsersService) SignUp(user domain.User) (string, error) {
 
 func (u *UsersService) SignIn(input domain.User) (string, error) {
 	if input.Email == "" || input.Password == "" {
-		return "", errNotEnoughArgs
+		return "", domain.ErrEmptyParameters
 	}
 
 	user, err := u.repository.GetByEmail(input.Email)
@@ -52,6 +50,9 @@ func (u *UsersService) SignIn(input domain.User) (string, error) {
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return "", domain.ErrWrongPassword
+		}
 		return "", err
 	}
 
@@ -60,7 +61,7 @@ func (u *UsersService) SignIn(input domain.User) (string, error) {
 
 func (u *UsersService) Authenticate(token string) (string, error) {
 	if token == "" {
-		return "", errNotEnoughArgs
+		return "", domain.ErrEmptyParameters
 	}
 
 	return u.tokenManager.VerifyAuthToken(token)
