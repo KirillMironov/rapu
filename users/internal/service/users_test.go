@@ -8,9 +8,10 @@ import (
 )
 
 const (
-	username = "Lisa"
-	email    = "lisa@gmail.com"
-	password = "qwerty"
+	testUsername = "Lisa"
+	testEmail    = "lisa@gmail.com"
+	testPassword = "qwerty"
+	testToken    = "token"
 )
 
 var service = NewUsersService(mocks.UsersRepositoryMock{}, mocks.TokenManagerMock{})
@@ -25,14 +26,14 @@ func TestUsersService_SignUp(t *testing.T) {
 		expectToken   bool
 		expectedError error
 	}{
-		{username, email, password, true, nil},
-		{"", email, password, false, errNotEnoughArgs},
-		{username, "", password, false, errNotEnoughArgs},
-		{username, email, "", false, errNotEnoughArgs},
-		{"", "", password, false, errNotEnoughArgs},
-		{"", email, "", false, errNotEnoughArgs},
-		{username, "", "", false, errNotEnoughArgs},
-		{"", "", "", false, errNotEnoughArgs},
+		{testUsername, testEmail, testPassword, true, nil},
+		{"", testEmail, testPassword, false, domain.ErrEmptyParameters},
+		{testUsername, "", testPassword, false, domain.ErrEmptyParameters},
+		{testUsername, testEmail, "", false, domain.ErrEmptyParameters},
+		{"", "", testPassword, false, domain.ErrEmptyParameters},
+		{"", testEmail, "", false, domain.ErrEmptyParameters},
+		{testUsername, "", "", false, domain.ErrEmptyParameters},
+		{"", "", "", false, domain.ErrEmptyParameters},
 	}
 
 	for _, tc := range testCases {
@@ -62,10 +63,10 @@ func TestUsersService_SignIn(t *testing.T) {
 		expectToken   bool
 		expectedError error
 	}{
-		{email, password, true, nil},
-		{"", password, false, errNotEnoughArgs},
-		{email, "", false, errNotEnoughArgs},
-		{"", "", false, errNotEnoughArgs},
+		{testEmail, testPassword, true, nil},
+		{"", testPassword, false, domain.ErrEmptyParameters},
+		{testEmail, "", false, domain.ErrEmptyParameters},
+		{"", "", false, domain.ErrEmptyParameters},
 	}
 
 	for _, tc := range testCases {
@@ -93,8 +94,8 @@ func TestUsersService_Authenticate(t *testing.T) {
 		expectUserId  bool
 		expectedError error
 	}{
-		{"token", true, nil},
-		{"", false, errNotEnoughArgs},
+		{testToken, true, nil},
+		{"", false, domain.ErrEmptyParameters},
 	}
 
 	for _, tc := range testCases {
