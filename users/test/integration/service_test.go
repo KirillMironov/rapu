@@ -20,8 +20,7 @@ const (
 var ctx = context.Background()
 
 func Test_SignUp(t *testing.T) {
-	client, closeConn, err := newClient()
-	assert.NoError(t, err)
+	client, closeConn := newClient(t)
 	defer closeConn()
 
 	resp, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
@@ -54,8 +53,7 @@ func Test_SignUp(t *testing.T) {
 }
 
 func Test_SignIn(t *testing.T) {
-	client, closeConn, err := newClient()
-	assert.NoError(t, err)
+	client, closeConn := newClient(t)
 	defer closeConn()
 
 	resp, err := client.SignIn(ctx, &proto.SignInRequest{ // user doesn't exist
@@ -109,8 +107,7 @@ func Test_SignIn(t *testing.T) {
 }
 
 func Test_Authenticate(t *testing.T) {
-	client, closeConn, err := newClient()
-	assert.NoError(t, err)
+	client, closeConn := newClient(t)
 	defer closeConn()
 
 	resp, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
