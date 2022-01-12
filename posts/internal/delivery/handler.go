@@ -5,17 +5,21 @@ import (
 	"encoding/json"
 	"github.com/KirillMironov/rapu/posts/domain"
 	"github.com/KirillMironov/rapu/posts/internal/delivery/proto"
-	"github.com/KirillMironov/rapu/posts/pkg/logger"
 	"google.golang.org/grpc"
 )
 
 type Handler struct {
 	service domain.PostsService
-	logger  logger.Logger
+	logger  Logger
 	proto.UnimplementedPostsServer
 }
 
-func NewHandler(service domain.PostsService, logger logger.Logger) *grpc.Server {
+type Logger interface {
+	Info(args ...interface{})
+	Error(args ...interface{})
+}
+
+func NewHandler(service domain.PostsService, logger Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterPostsServer(server, &Handler{
 		service: service,
