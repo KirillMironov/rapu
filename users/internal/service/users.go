@@ -3,16 +3,20 @@ package service
 import (
 	"errors"
 	"github.com/KirillMironov/rapu/users/domain"
-	"github.com/KirillMironov/rapu/users/pkg/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UsersService struct {
 	repository   domain.UsersRepository
-	tokenManager auth.TokenManager
+	tokenManager TokenManager
 }
 
-func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenManager) *UsersService {
+type TokenManager interface {
+	Generate(userId string) (string, error)
+	Verify(token string) (string, error)
+}
+
+func NewUsersService(repository domain.UsersRepository, tokenManager TokenManager) *UsersService {
 	return &UsersService{
 		repository:   repository,
 		tokenManager: tokenManager,
@@ -35,7 +39,7 @@ func (u *UsersService) SignUp(user domain.User) (string, error) {
 		return "", err
 	}
 
-	return u.tokenManager.GenerateAuthToken(userId)
+	return u.tokenManager.Generate(userId)
 }
 
 func (u *UsersService) SignIn(input domain.User) (string, error) {
@@ -56,7 +60,7 @@ func (u *UsersService) SignIn(input domain.User) (string, error) {
 		return "", err
 	}
 
-	return u.tokenManager.GenerateAuthToken(user.Id)
+	return u.tokenManager.Generate(user.Id)
 }
 
 func (u *UsersService) Authenticate(token string) (string, error) {
@@ -64,5 +68,5 @@ func (u *UsersService) Authenticate(token string) (string, error) {
 		return "", domain.ErrEmptyParameters
 	}
 
-	return u.tokenManager.VerifyAuthToken(token)
+	return u.tokenManager.Verify(token)
 }

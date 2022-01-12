@@ -55,7 +55,7 @@ func newClient(t *testing.T) (proto.UsersClient, func()) {
 }
 
 func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
-	manager, err := auth.NewManager(jwtKey, tokenTTL)
+	manager, err := auth.NewTokenManager(jwtKey, tokenTTL)
 	require.NoError(t, err)
 	repo := postgres.NewUsersRepository(db)
 	svc := service.NewUsersService(repo, manager)
