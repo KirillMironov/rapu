@@ -2,10 +2,10 @@ package mocks
 
 type TokenManagerMock struct{}
 
-func (TokenManagerMock) Generate(userId string) (string, error) {
+func (TokenManagerMock) Generate(string) (string, error) {
 	return "token", nil
 }
 
-func (TokenManagerMock) Verify(token string) (string, error) {
+func (TokenManagerMock) Verify(string) (string, error) {
 	return "token", nil
 }
