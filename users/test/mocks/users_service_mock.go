@@ -6,14 +6,14 @@ import (
 
 type UsersServiceMock struct{}
 
-func (UsersServiceMock) SignUp(user domain.User) (string, error) {
+func (UsersServiceMock) SignUp(domain.User) (string, error) {
 	return "token", nil
 }
 
-func (UsersServiceMock) SignIn(user domain.User) (string, error) {
+func (UsersServiceMock) SignIn(domain.User) (string, error) {
 	return "token", nil
 }
 
-func (UsersServiceMock) Authenticate(token string) (string, error) {
+func (UsersServiceMock) Authenticate(string) (string, error) {
 	return "token", nil
 }

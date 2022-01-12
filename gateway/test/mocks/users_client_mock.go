@@ -8,17 +8,17 @@ import (
 
 type UsersClientMock struct{}
 
-func (UsersClientMock) SignUp(ctx context.Context, in *proto.SignUpRequest,
-	opts ...grpc.CallOption) (*proto.Response, error) {
+func (UsersClientMock) SignUp(context.Context, *proto.SignUpRequest,
+	...grpc.CallOption) (*proto.Response, error) {
 	return nil, nil
 }
 
-func (UsersClientMock) SignIn(ctx context.Context, in *proto.SignInRequest,
-	opts ...grpc.CallOption) (*proto.Response, error) {
+func (UsersClientMock) SignIn(context.Context, *proto.SignInRequest,
+	...grpc.CallOption) (*proto.Response, error) {
 	return nil, nil
 }
 
-func (UsersClientMock) Authenticate(ctx context.Context, in *proto.AuthRequest,
-	opts ...grpc.CallOption) (*proto.AuthResponse, error) {
+func (UsersClientMock) Authenticate(context.Context, *proto.AuthRequest,
+	...grpc.CallOption) (*proto.AuthResponse, error) {
 	return nil, nil
 }

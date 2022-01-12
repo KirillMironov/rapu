@@ -2,17 +2,21 @@ package delivery
 
 import (
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
-	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 
 type Handler struct {
 	usersClient proto.UsersClient
 	postsClient proto.PostsClient
-	logger      logger.Logger
+	logger      Logger
 }
 
-func NewHandler(client proto.UsersClient, postsClient proto.PostsClient, logger logger.Logger) *Handler {
+type Logger interface {
+	Info(args ...interface{})
+	Error(args ...interface{})
+}
+
+func NewHandler(client proto.UsersClient, postsClient proto.PostsClient, logger Logger) *Handler {
 	return &Handler{
 		usersClient: client,
 		postsClient: postsClient,

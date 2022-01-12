@@ -48,7 +48,7 @@ func main() {
 	}
 
 	// JWT manager
-	tokenManager, err := auth.NewManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
+	tokenManager, err := auth.NewTokenManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
 	if err != nil {
 		logger.Fatal(err)
 	}

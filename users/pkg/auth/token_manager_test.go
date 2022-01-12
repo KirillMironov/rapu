@@ -15,24 +15,24 @@ const (
 func TestManager(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewManager("", tokenTTL)
+	_, err := NewTokenManager("", tokenTTL)
 	assert.Error(t, err)
 
-	_, err = NewManager(JWTKey, tokenTTL)
+	_, err = NewTokenManager(JWTKey, tokenTTL)
 	assert.NoError(t, err)
 }
 
 func TestManager_GenerateAuthToken(t *testing.T) {
 	t.Parallel()
 
-	tokenManager, err := NewManager(JWTKey, tokenTTL)
+	tokenManager, err := NewTokenManager(JWTKey, tokenTTL)
 	assert.NoError(t, err)
 
-	token, err := tokenManager.GenerateAuthToken(userId)
+	token, err := tokenManager.Generate(userId)
 	assert.NotEmpty(t, token)
 	assert.NoError(t, err)
 
-	token, err = tokenManager.GenerateAuthToken("")
+	token, err = tokenManager.Generate("")
 	assert.NotEmpty(t, token)
 	assert.NoError(t, err)
 }
@@ -40,27 +40,27 @@ func TestManager_GenerateAuthToken(t *testing.T) {
 func TestManager_VerifyAuthToken(t *testing.T) {
 	t.Parallel()
 
-	tokenManager, err := NewManager(JWTKey, tokenTTL)
+	tokenManager, err := NewTokenManager(JWTKey, tokenTTL)
 	assert.NoError(t, err)
 
 	// token TTL = 60 Min
-	token, err := tokenManager.GenerateAuthToken(userId)
+	token, err := tokenManager.Generate(userId)
 	assert.NotEmpty(t, token)
 	assert.NoError(t, err)
 
-	id, err := tokenManager.VerifyAuthToken(token)
+	id, err := tokenManager.Verify(token)
 	assert.Equal(t, userId, id)
 	assert.NoError(t, err)
 
 	// token TTL = -60 Min
-	tokenManager, err = NewManager(JWTKey, time.Duration(-60*int64(time.Minute)))
+	tokenManager, err = NewTokenManager(JWTKey, time.Duration(-60*int64(time.Minute)))
 	assert.NoError(t, err)
 
-	token, err = tokenManager.GenerateAuthToken(userId)
+	token, err = tokenManager.Generate(userId)
 	assert.NotEmpty(t, token)
 	assert.NoError(t, err)
 
-	id, err = tokenManager.VerifyAuthToken(token)
+	id, err = tokenManager.Verify(token)
 	assert.Empty(t, id)
 	assert.Error(t, err)
 }
