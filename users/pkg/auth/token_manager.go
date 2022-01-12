@@ -7,24 +7,19 @@ import (
 	"time"
 )
 
-type TokenManager interface {
-	GenerateAuthToken(userId string) (string, error)
-	VerifyAuthToken(token string) (string, error)
-}
-
-type Manager struct {
+type TokenManager struct {
 	JWTKey   string
 	TokenTTL time.Duration
 }
 
-func NewManager(JWTKey string, tokenTTL time.Duration) (*Manager, error) {
+func NewTokenManager(JWTKey string, tokenTTL time.Duration) (*TokenManager, error) {
 	if JWTKey == "" {
 		return nil, errors.New("JWT key was not provided")
 	}
-	return &Manager{JWTKey: JWTKey, TokenTTL: tokenTTL}, nil
+	return &TokenManager{JWTKey: JWTKey, TokenTTL: tokenTTL}, nil
 }
 
-func (m Manager) GenerateAuthToken(userId string) (string, error) {
+func (m TokenManager) Generate(userId string) (string, error) {
 	currentTime := time.Now()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
@@ -36,7 +31,7 @@ func (m Manager) GenerateAuthToken(userId string) (string, error) {
 	return token.SignedString([]byte(m.JWTKey))
 }
 
-func (m Manager) VerifyAuthToken(token string) (string, error) {
+func (m TokenManager) Verify(token string) (string, error) {
 	tkn, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

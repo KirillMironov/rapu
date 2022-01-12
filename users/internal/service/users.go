@@ -3,18 +3,20 @@ package service
 import (
 	"errors"
 	"github.com/KirillMironov/rapu/users/domain"
-	"github.com/KirillMironov/rapu/users/pkg/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var errNotEnoughArgs = errors.New("not enough arguments")
-
 type UsersService struct {
 	repository   domain.UsersRepository
-	tokenManager auth.TokenManager
+	tokenManager TokenManager
 }
 
-func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenManager) *UsersService {
+type TokenManager interface {
+	Generate(userId string) (string, error)
+	Verify(token string) (string, error)
+}
+
+func NewUsersService(repository domain.UsersRepository, tokenManager TokenManager) *UsersService {
 	return &UsersService{
 		repository:   repository,
 		tokenManager: tokenManager,
@@ -23,7 +25,7 @@ func NewUsersService(repository domain.UsersRepository, tokenManager auth.TokenM
 
 func (u *UsersService) SignUp(user domain.User) (string, error) {
 	if user.Username == "" || user.Email == "" || user.Password == "" {
-		return "", errNotEnoughArgs
+		return "", domain.ErrEmptyParameters
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
@@ -37,12 +39,12 @@ func (u *UsersService) SignUp(user domain.User) (string, error) {
 		return "", err
 	}
 
-	return u.tokenManager.GenerateAuthToken(userId)
+	return u.tokenManager.Generate(userId)
 }
 
 func (u *UsersService) SignIn(input domain.User) (string, error) {
 	if input.Email == "" || input.Password == "" {
-		return "", errNotEnoughArgs
+		return "", domain.ErrEmptyParameters
 	}
 
 	user, err := u.repository.GetByEmail(input.Email)
@@ -52,16 +54,19 @@ func (u *UsersService) SignIn(input domain.User) (string, error) {
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return "", domain.ErrWrongPassword
+		}
 		return "", err
 	}
 
-	return u.tokenManager.GenerateAuthToken(user.Id)
+	return u.tokenManager.Generate(user.Id)
 }
 
 func (u *UsersService) Authenticate(token string) (string, error) {
 	if token == "" {
-		return "", errNotEnoughArgs
+		return "", domain.ErrEmptyParameters
 	}
 
-	return u.tokenManager.VerifyAuthToken(token)
+	return u.tokenManager.Verify(token)
 }

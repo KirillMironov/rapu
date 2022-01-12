@@ -1,8 +1,11 @@
 package postgres
 
 import (
+	"database/sql"
+	"errors"
 	"github.com/KirillMironov/rapu/users/domain"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"time"
 )
 
@@ -23,9 +26,12 @@ func (u *UsersRepository) Create(user domain.User) (string, error) {
 		return "", err
 	}
 
-	err = tx.QueryRowx(sqlStr, user.Username, user.Email, user.Password, time.Now().UTC()).Scan(&userId)
+	err = tx.QueryRowx(sqlStr, user.Username, user.Email, user.Password, time.Now()).Scan(&userId)
 	if err != nil {
 		_ = tx.Rollback()
+		if e, ok := err.(*pq.Error); ok && e.Code == "23505" {
+			return "", domain.ErrUserAlreadyExists
+		}
 		return "", err
 	}
 
@@ -36,5 +42,13 @@ func (u *UsersRepository) GetByEmail(email string) (domain.User, error) {
 	var sqlStr = "SELECT id, password FROM users WHERE email = $1"
 	var user domain.User
 
-	return user, u.db.QueryRowx(sqlStr, email).Scan(&user.Id, &user.Password)
+	err := u.db.QueryRowx(sqlStr, email).Scan(&user.Id, &user.Password)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return domain.User{}, domain.ErrUserNotFound
+		}
+		return domain.User{}, err
+	}
+
+	return user, nil
 }
