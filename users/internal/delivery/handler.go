@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/users/domain"
 	"github.com/KirillMironov/rapu/users/internal/delivery/proto"
-	"github.com/KirillMironov/rapu/users/pkg/logger"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -12,11 +11,16 @@ import (
 
 type Handler struct {
 	service domain.UsersService
-	logger  logger.Logger
+	logger  Logger
 	proto.UnimplementedUsersServer
 }
 
-func NewHandler(usersService domain.UsersService, logger logger.Logger) *grpc.Server {
+type Logger interface {
+	Info(args ...interface{})
+	Error(args ...interface{})
+}
+
+func NewHandler(usersService domain.UsersService, logger Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterUsersServer(server, &Handler{
 		service: usersService,
