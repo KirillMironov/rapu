@@ -30,7 +30,11 @@ func (p *PostsRepository) GetByUserId(userId, offset string, limit int64) ([]dom
 		return nil, err
 	}
 
-	var query = bson.M{"user_id": userId, "_id": bson.M{"$gt": id}}
+	var query = bson.M{"user_id": userId}
+	if id != primitive.NilObjectID {
+		query = bson.M{"user_id": userId, "_id": bson.M{"$lt": id}}
+	}
+
 	var opts = options.Find().
 		SetSort(bson.D{{Key: "_id", Value: -1}}).
 		SetLimit(limit)
