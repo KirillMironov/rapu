@@ -20,5 +20,5 @@ func (UsersClientMock) SignIn(context.Context, *proto.SignInRequest,
 
 func (UsersClientMock) Authenticate(context.Context, *proto.AuthRequest,
 	...grpc.CallOption) (*proto.AuthResponse, error) {
-	return nil, nil
+	return &proto.AuthResponse{UserId: "1"}, nil
 }
