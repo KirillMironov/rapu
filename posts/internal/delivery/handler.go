@@ -6,6 +6,8 @@ import (
 	"github.com/KirillMironov/rapu/posts/domain"
 	"github.com/KirillMironov/rapu/posts/internal/delivery/proto"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -36,8 +38,14 @@ func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*pr
 
 	err := h.service.Create(post)
 	if err != nil {
-		h.logger.Info(err)
-		return nil, err
+		switch err {
+		case domain.ErrEmptyParameters:
+			h.logger.Info(err)
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		default:
+			h.logger.Error(err)
+			return nil, err
+		}
 	}
 
 	return &proto.CreateResponse{}, nil
@@ -46,8 +54,17 @@ func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*pr
 func (h *Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
 	posts, err := h.service.GetByUserId(request.GetUserId(), request.GetOffset(), request.GetLimit())
 	if err != nil {
-		h.logger.Info(err)
-		return nil, err
+		switch err {
+		case domain.ErrEmptyParameters:
+			h.logger.Info(err)
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case domain.ErrEmptyResult:
+			h.logger.Info(err)
+			return nil, status.Error(codes.NotFound, err.Error())
+		default:
+			h.logger.Error(err)
+			return nil, err
+		}
 	}
 
 	encoded, err := json.Marshal(posts)

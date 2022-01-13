@@ -22,9 +22,9 @@ func TestPostsService_Create(t *testing.T) {
 		expectedError error
 	}{
 		{domain.Post{UserId: userId, Message: message}, nil},
-		{domain.Post{UserId: "", Message: message}, errNotEnoughArgs},
-		{domain.Post{UserId: userId, Message: ""}, errNotEnoughArgs},
-		{domain.Post{}, errNotEnoughArgs},
+		{domain.Post{UserId: "", Message: message}, domain.ErrEmptyParameters},
+		{domain.Post{UserId: userId, Message: ""}, domain.ErrEmptyParameters},
+		{domain.Post{}, domain.ErrEmptyParameters},
 	}
 
 	for _, tc := range testCases {
@@ -42,7 +42,7 @@ func TestPostsService_GetByUserId(t *testing.T) {
 		expectedError error
 	}{
 		{userId, nil},
-		{"", errNotEnoughArgs},
+		{"", domain.ErrEmptyParameters},
 	}
 
 	for _, tc := range testCases {
