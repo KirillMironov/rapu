@@ -1,12 +1,9 @@
 package service
 
 import (
-	"errors"
 	"github.com/KirillMironov/rapu/posts/domain"
 	"time"
 )
-
-var errNotEnoughArgs = errors.New("not enough arguments")
 
 type PostsService struct {
 	repository domain.PostsRepository
@@ -19,7 +16,7 @@ func NewPostsService(repository domain.PostsRepository, maxLimit int64) *PostsSe
 
 func (p *PostsService) Create(post domain.Post) error {
 	if post.UserId == "" || post.Message == "" {
-		return errNotEnoughArgs
+		return domain.ErrEmptyParameters
 	}
 
 	post.CreatedAt = time.Now()
@@ -29,12 +26,17 @@ func (p *PostsService) Create(post domain.Post) error {
 
 func (p *PostsService) GetByUserId(userId, offset string, limit int64) ([]domain.Post, error) {
 	if userId == "" {
-		return nil, errNotEnoughArgs
+		return nil, domain.ErrEmptyParameters
 	}
 
 	if limit < 1 || limit > p.maxLimit {
 		limit = p.maxLimit
 	}
 
-	return p.repository.GetByUserId(userId, offset, limit)
+	posts, err := p.repository.GetByUserId(userId, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }

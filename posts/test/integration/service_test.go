@@ -8,6 +8,8 @@ import (
 	"github.com/KirillMironov/rapu/posts/domain"
 	"github.com/KirillMironov/rapu/posts/internal/delivery/proto"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strconv"
 	"testing"
 )
@@ -60,11 +62,27 @@ func TestPosts_Create(t *testing.T) {
 	err = json.Unmarshal(resp.GetPosts(), &posts)
 	assert.NoError(t, err)
 	assert.Len(t, posts, 1)
+
+	_, err = client.Create(ctx, &proto.CreateRequest{ // empty parameters
+		UserId:  "",
+		Message: "",
+	})
+	assert.Error(t, err)
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
 }
 
 func TestPosts_GetByUserId(t *testing.T) {
 	client, closeConn := newClient(t)
 	defer closeConn()
+
+	resp, err := client.GetByUserId(ctx, &proto.GetByUserIdRequest{ // posts do not exist yet
+		UserId: userId,
+	})
+	assert.Error(t, err)
+	assert.Empty(t, resp.GetPosts())
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.NotFound, st.Code())
 
 	for i := 0; i < maxLimit; i++ {
 		_, err := client.Create(ctx, &proto.CreateRequest{
@@ -74,7 +92,7 @@ func TestPosts_GetByUserId(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	resp, err := client.GetByUserId(ctx, &proto.GetByUserIdRequest{
+	resp, err = client.GetByUserId(ctx, &proto.GetByUserIdRequest{
 		UserId: userId,
 	})
 	assert.NoError(t, err)
@@ -83,10 +101,25 @@ func TestPosts_GetByUserId(t *testing.T) {
 	err = json.Unmarshal(resp.GetPosts(), &posts)
 	assert.NoError(t, err)
 
-	// descending order
-	for i := 0; i < len(posts)-1; i++ {
+	for i := 0; i < len(posts)-1; i++ { // descending order
 		assert.True(t, posts[i].CreatedAt.After(posts[i+1].CreatedAt) || posts[i].CreatedAt.Equal(posts[i+1].CreatedAt))
 	}
+
+	resp, err = client.GetByUserId(ctx, &proto.GetByUserIdRequest{ // empty parameters
+		UserId: "",
+	})
+	assert.Error(t, err)
+	assert.Empty(t, resp.GetPosts())
+	st, _ = status.FromError(err)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
+
+	resp, err = client.GetByUserId(ctx, &proto.GetByUserIdRequest{ // wrong UserId
+		UserId: "-1",
+	})
+	assert.Error(t, err)
+	assert.Empty(t, resp.GetPosts())
+	st, _ = status.FromError(err)
+	assert.Equal(t, codes.NotFound, st.Code())
 }
 
 func TestPosts_GetByUserId_pagination_offset(t *testing.T) {
@@ -101,8 +134,7 @@ func TestPosts_GetByUserId_pagination_offset(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// default offset
-	resp, err := client.GetByUserId(ctx, &proto.GetByUserIdRequest{
+	resp, err := client.GetByUserId(ctx, &proto.GetByUserIdRequest{ // default offset
 		UserId: userId,
 	})
 	assert.NoError(t, err)
@@ -112,8 +144,7 @@ func TestPosts_GetByUserId_pagination_offset(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, posts, maxLimit)
 
-	// manual offset
-	resp, err = client.GetByUserId(ctx, &proto.GetByUserIdRequest{
+	resp, err = client.GetByUserId(ctx, &proto.GetByUserIdRequest{ // manual offset
 		UserId: userId,
 		Offset: posts[0].Id.Hex(),
 	})
