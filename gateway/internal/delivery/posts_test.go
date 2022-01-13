@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	testUserId  = "1"
-	testMessage = "Hello"
-	testOffset  = "offset"
-	testLimit   = 10
+	testUserId      = "1"
+	testMessage     = "Hello"
+	testBearerToken = "Bearer token"
+	testOffset      = "offset"
+	testLimit       = 10
 )
 
 func TestHandler_createPost(t *testing.T) {
@@ -21,12 +22,17 @@ func TestHandler_createPost(t *testing.T) {
 
 	testCases := []struct {
 		form               createPostForm
+		bearerToken        string
 		expectedStatusCode int
 	}{
-		{createPostForm{UserId: testUserId, Message: testMessage}, http.StatusCreated},
-		{createPostForm{UserId: "", Message: testMessage}, http.StatusBadRequest},
-		{createPostForm{UserId: testUserId, Message: ""}, http.StatusBadRequest},
-		{createPostForm{UserId: "", Message: ""}, http.StatusBadRequest},
+		{createPostForm{UserId: testUserId, Message: testMessage}, testBearerToken, http.StatusCreated},
+		{createPostForm{UserId: testUserId, Message: testMessage}, "", http.StatusUnauthorized},
+		{createPostForm{UserId: "", Message: testMessage}, testBearerToken, http.StatusBadRequest},
+		{createPostForm{UserId: "", Message: testMessage}, "", http.StatusUnauthorized},
+		{createPostForm{UserId: testUserId, Message: ""}, testBearerToken, http.StatusBadRequest},
+		{createPostForm{UserId: testUserId, Message: ""}, "", http.StatusUnauthorized},
+		{createPostForm{UserId: "", Message: ""}, testBearerToken, http.StatusBadRequest},
+		{createPostForm{UserId: "", Message: ""}, "", http.StatusUnauthorized},
 	}
 
 	for _, tc := range testCases {
@@ -37,6 +43,7 @@ func TestHandler_createPost(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodPost, "/api/v1/posts", bytes.NewReader(body))
 		assert.NoError(t, err)
+		req.Header.Set("Authorization", tc.bearerToken)
 
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)

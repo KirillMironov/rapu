@@ -9,10 +9,7 @@ import (
 	"net/http"
 )
 
-const (
-	accessToken = "access_token"
-	userId      = "user_id"
-)
+const accessTokenKey = "access_token"
 
 type signUpForm struct {
 	Username string `json:"username" binding:"required"`
@@ -55,7 +52,7 @@ func (h *Handler) signUp(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusCreated, gin.H{accessToken: resp.GetAccessToken()})
+	c.JSON(http.StatusCreated, gin.H{accessTokenKey: resp.GetAccessToken()})
 }
 
 type signInForm struct {
@@ -97,45 +94,5 @@ func (h *Handler) signIn(c *gin.Context) {
 		}
 	}
 
-	c.JSON(http.StatusOK, gin.H{accessToken: resp.GetAccessToken()})
-}
-
-type authForm struct {
-	AccessToken string `json:"access_token" binding:"required"`
-}
-
-func (h *Handler) auth(c *gin.Context) {
-	var form authForm
-
-	err := c.BindJSON(&form)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		h.logger.Info(err)
-		return
-	}
-
-	resp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{
-		AccessToken: form.AccessToken,
-	})
-	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok {
-			c.Status(http.StatusInternalServerError)
-			h.logger.Error(err)
-			return
-		}
-		switch st.Code() {
-		case codes.InvalidArgument:
-			c.Status(http.StatusBadRequest)
-			return
-		case codes.Unauthenticated:
-			c.Status(http.StatusUnauthorized)
-			return
-		default:
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-	}
-
-	c.JSON(http.StatusOK, gin.H{userId: resp.GetUserId()})
+	c.JSON(http.StatusOK, gin.H{accessTokenKey: resp.GetAccessToken()})
 }
