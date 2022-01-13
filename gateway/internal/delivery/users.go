@@ -4,6 +4,8 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
@@ -34,9 +36,23 @@ func (h *Handler) signUp(c *gin.Context) {
 		Password: form.Password,
 	})
 	if err != nil {
-		c.Status(http.StatusUnauthorized)
-		h.logger.Info(err)
-		return
+		st, ok := status.FromError(err)
+		if !ok {
+			c.Status(http.StatusInternalServerError)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			c.Status(http.StatusBadRequest)
+			return
+		case codes.AlreadyExists:
+			c.Status(http.StatusUnauthorized)
+			return
+		default:
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	c.JSON(http.StatusCreated, gin.H{accessToken: resp.GetAccessToken()})
@@ -62,9 +78,23 @@ func (h *Handler) signIn(c *gin.Context) {
 		Password: form.Password,
 	})
 	if err != nil {
-		c.Status(http.StatusUnauthorized)
-		h.logger.Info(err)
-		return
+		st, ok := status.FromError(err)
+		if !ok {
+			c.Status(http.StatusInternalServerError)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			c.Status(http.StatusBadRequest)
+			return
+		case codes.Unauthenticated:
+			c.Status(http.StatusUnauthorized)
+			return
+		default:
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{accessToken: resp.GetAccessToken()})
@@ -80,7 +110,7 @@ func (h *Handler) auth(c *gin.Context) {
 	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		h.logger.Info("access token was not provided")
+		h.logger.Info(err)
 		return
 	}
 
@@ -88,9 +118,23 @@ func (h *Handler) auth(c *gin.Context) {
 		AccessToken: form.AccessToken,
 	})
 	if err != nil {
-		c.Status(http.StatusUnauthorized)
-		h.logger.Info(err)
-		return
+		st, ok := status.FromError(err)
+		if !ok {
+			c.Status(http.StatusInternalServerError)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			c.Status(http.StatusBadRequest)
+			return
+		case codes.Unauthenticated:
+			c.Status(http.StatusUnauthorized)
+			return
+		default:
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{userId: resp.GetUserId()})
