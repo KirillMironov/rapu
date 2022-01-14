@@ -13,4 +13,4 @@ proto:
 	go mod tidy
 
 lint:
-	golangci-lint run
+	golangci-lint run --exclude logger.Sync

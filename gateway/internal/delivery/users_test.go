@@ -110,28 +110,3 @@ func TestHandler_signIn(t *testing.T) {
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
 	}
 }
-
-func TestHandler_auth(t *testing.T) {
-	t.Parallel()
-
-	testCases := []struct {
-		form               authForm
-		expectedStatusCode int
-	}{
-		{authForm{AccessToken: "token"}, http.StatusOK},
-		{authForm{AccessToken: ""}, http.StatusBadRequest},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		body, err := json.Marshal(tc.form)
-		assert.NoError(t, err)
-
-		w := httptest.NewRecorder()
-		req, err := http.NewRequest(http.MethodPost, "/api/v1/users/auth", bytes.NewReader(body))
-		assert.NoError(t, err)
-
-		router.ServeHTTP(w, req)
-		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
-	}
-}
