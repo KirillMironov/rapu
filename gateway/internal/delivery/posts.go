@@ -10,7 +10,6 @@ import (
 )
 
 type createPostForm struct {
-	UserId  string `json:"user_id" binding:"required"`
 	Message string `json:"message" binding:"required"`
 }
 
@@ -25,7 +24,7 @@ func (h *Handler) createPost(c *gin.Context) {
 	}
 
 	_, err = h.postsClient.Create(context.Background(), &proto.CreateRequest{
-		UserId:  form.UserId,
+		UserId:  c.GetString(userIdKey),
 		Message: form.Message,
 	})
 	if err != nil {
