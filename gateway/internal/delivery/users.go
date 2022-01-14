@@ -44,7 +44,7 @@ func (h *Handler) signUp(c *gin.Context) {
 			c.Status(http.StatusBadRequest)
 			return
 		case codes.AlreadyExists:
-			c.Status(http.StatusUnauthorized)
+			c.Status(http.StatusConflict)
 			return
 		default:
 			c.Status(http.StatusInternalServerError)
