@@ -21,23 +21,19 @@ func TestHandler_createPost(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		form               createPostForm
+		message            createPostForm
 		bearerToken        string
 		expectedStatusCode int
 	}{
-		{createPostForm{UserId: testUserId, Message: testMessage}, testBearerToken, http.StatusCreated},
-		{createPostForm{UserId: testUserId, Message: testMessage}, "", http.StatusUnauthorized},
-		{createPostForm{UserId: "", Message: testMessage}, testBearerToken, http.StatusBadRequest},
-		{createPostForm{UserId: "", Message: testMessage}, "", http.StatusUnauthorized},
-		{createPostForm{UserId: testUserId, Message: ""}, testBearerToken, http.StatusBadRequest},
-		{createPostForm{UserId: testUserId, Message: ""}, "", http.StatusUnauthorized},
-		{createPostForm{UserId: "", Message: ""}, testBearerToken, http.StatusBadRequest},
-		{createPostForm{UserId: "", Message: ""}, "", http.StatusUnauthorized},
+		{createPostForm{testMessage}, testBearerToken, http.StatusCreated},
+		{createPostForm{testMessage}, "", http.StatusUnauthorized},
+		{createPostForm{""}, testBearerToken, http.StatusBadRequest},
+		{createPostForm{""}, "", http.StatusUnauthorized},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.form)
+		body, err := json.Marshal(tc.message)
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
