@@ -29,7 +29,7 @@ func NewHandler(usersService domain.UsersService, logger Logger) *grpc.Server {
 	return server
 }
 
-func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
+func (h *Handler) SignUp(_ context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
 	var user = domain.User{
 		Username: request.GetUsername(),
 		Email:    request.GetEmail(),
@@ -54,7 +54,7 @@ func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*pr
 	return &proto.Response{AccessToken: token}, nil
 }
 
-func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*proto.Response, error) {
+func (h *Handler) SignIn(_ context.Context, request *proto.SignInRequest) (*proto.Response, error) {
 	var user = domain.User{
 		Email:    request.GetEmail(),
 		Password: request.GetPassword(),
@@ -78,7 +78,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 	return &proto.Response{AccessToken: token}, nil
 }
 
-func (h *Handler) Authenticate(ctx context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
+func (h *Handler) Authenticate(_ context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
 	userId, err := h.service.Authenticate(request.GetAccessToken())
 	if err != nil {
 		h.logger.Info(err)

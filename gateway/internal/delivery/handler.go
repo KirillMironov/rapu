@@ -27,7 +27,7 @@ func NewHandler(client proto.UsersClient, postsClient proto.PostsClient, logger 
 func (h *Handler) InitRoutes() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
-	router.Use(gin.Recovery())
+	router.Use(gin.Recovery(), h.middleware)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -35,13 +35,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		{
 			users.POST("/sign-up", h.signUp)
 			users.POST("/sign-in", h.signIn)
-			users.POST("/auth", h.auth)
 		}
 
 		posts := v1.Group("/posts")
 		{
-			posts.POST("", h.createPost)
 			posts.GET("/:userId", h.getPostsByUserId)
+			posts.Use(h.auth).POST("", h.createPost)
 		}
 	}
 

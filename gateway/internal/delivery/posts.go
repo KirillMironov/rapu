@@ -4,11 +4,12 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
 type createPostForm struct {
-	UserId  string `json:"user_id" binding:"required"`
 	Message string `json:"message" binding:"required"`
 }
 
@@ -23,13 +24,24 @@ func (h *Handler) createPost(c *gin.Context) {
 	}
 
 	_, err = h.postsClient.Create(context.Background(), &proto.CreateRequest{
-		UserId:  form.UserId,
+		UserId:  c.GetString(userIdKey),
 		Message: form.Message,
 	})
 	if err != nil {
-		c.Status(http.StatusUnauthorized)
-		h.logger.Info(err)
-		return
+		st, ok := status.FromError(err)
+		if !ok {
+			c.Status(http.StatusInternalServerError)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			c.Status(http.StatusBadRequest)
+			return
+		default:
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	c.Status(http.StatusCreated)
@@ -56,9 +68,23 @@ func (h *Handler) getPostsByUserId(c *gin.Context) {
 		Limit:  form.Limit,
 	})
 	if err != nil {
-		c.Status(http.StatusUnauthorized)
-		h.logger.Info(err)
-		return
+		st, ok := status.FromError(err)
+		if !ok {
+			c.Status(http.StatusInternalServerError)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			c.Status(http.StatusBadRequest)
+			return
+		case codes.NotFound:
+			c.Status(http.StatusNotFound)
+			return
+		default:
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
 
 	c.String(http.StatusOK, string(resp.GetPosts()))

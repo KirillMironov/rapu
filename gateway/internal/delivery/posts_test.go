@@ -10,33 +10,36 @@ import (
 )
 
 const (
-	testUserId  = "1"
-	testMessage = "Hello"
-	testOffset  = "offset"
-	testLimit   = 10
+	testUserId      = "1"
+	testMessage     = "Hello"
+	testBearerToken = "Bearer token"
+	testOffset      = "offset"
+	testLimit       = 10
 )
 
 func TestHandler_createPost(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		form               createPostForm
+		message            createPostForm
+		bearerToken        string
 		expectedStatusCode int
 	}{
-		{createPostForm{UserId: testUserId, Message: testMessage}, http.StatusCreated},
-		{createPostForm{UserId: "", Message: testMessage}, http.StatusBadRequest},
-		{createPostForm{UserId: testUserId, Message: ""}, http.StatusBadRequest},
-		{createPostForm{UserId: "", Message: ""}, http.StatusBadRequest},
+		{createPostForm{testMessage}, testBearerToken, http.StatusCreated},
+		{createPostForm{testMessage}, "", http.StatusUnauthorized},
+		{createPostForm{""}, testBearerToken, http.StatusBadRequest},
+		{createPostForm{""}, "", http.StatusUnauthorized},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.form)
+		body, err := json.Marshal(tc.message)
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodPost, "/api/v1/posts", bytes.NewReader(body))
 		assert.NoError(t, err)
+		req.Header.Set("Authorization", tc.bearerToken)
 
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
