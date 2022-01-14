@@ -30,7 +30,7 @@ func NewHandler(service domain.PostsService, logger Logger) *grpc.Server {
 	return server
 }
 
-func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*proto.CreateResponse, error) {
+func (h *Handler) Create(_ context.Context, request *proto.CreateRequest) (*proto.CreateResponse, error) {
 	var post = domain.Post{
 		UserId:  request.GetUserId(),
 		Message: request.GetMessage(),
@@ -51,7 +51,7 @@ func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*pr
 	return &proto.CreateResponse{}, nil
 }
 
-func (h *Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
+func (h *Handler) GetByUserId(_ context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
 	posts, err := h.service.GetByUserId(request.GetUserId(), request.GetOffset(), request.GetLimit())
 	if err != nil {
 		switch err {
