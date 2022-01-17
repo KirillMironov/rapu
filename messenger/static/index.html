@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Messenger</title>
+</head>
+<body>
+
+<h2>Messenger</h2>
+
+<div>
+    <label for="userId">userId</label><br/>
+    <input type="text" id="userId"><br/>
+
+    <label for="toUserId">toUserId</label><br/>
+    <input type="text" id="toUserId"><br/>
+
+    <p><input type="button" value="Connect" onclick="connect()"></p>
+</div><hr>
+
+<div>
+    <label for="message_input">message</label><br/>
+    <textarea id="message_input" rows="5" cols="75"></textarea>
+
+    <p><input type="button" value="Send" onclick="sendMessage()"></p>
+</div><hr>
+
+<div>
+    <p>
+        <label for="messages_area">messages</label><br/>
+        <textarea id="messages_area" rows="25" cols="75" readonly></textarea>
+    </p>
+</div>
+
+<script src="main.js"></script>
+
+</body>
+</html>

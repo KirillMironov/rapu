@@ -3,12 +3,14 @@ package delivery
 import (
 	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/gorilla/websocket"
+	"log"
 	"net/http"
 )
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 type Handler struct {
@@ -26,17 +28,17 @@ func (h *Handler) InitRoutes() *http.ServeMux {
 }
 
 func (h *Handler) connect(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+	userId := r.URL.Query().Get("userId")
+	toUserId := r.URL.Query().Get("toUserId")
+	if userId == "" || toUserId == "" {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	userId := r.URL.Query().Get("userId")
-	toUserId := r.URL.Query().Get("toUserId")
-
-	if userId == "" || toUserId == "" {
-		w.WriteHeader(http.StatusBadRequest)
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println(err)
 		return
 	}
 
