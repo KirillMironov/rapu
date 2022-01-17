@@ -11,8 +11,8 @@ func NewClientsService(messagesService domain.MessagesService) *ClientsService {
 }
 
 func (c *ClientsService) Connect(client domain.Client) {
-	defer client.Conn.Close()
 	done := make(chan struct{})
+	defer c.disconnect(client, done)
 
 	go c.messagesService.Writer(client, done)
 	c.messagesService.Reader(client)

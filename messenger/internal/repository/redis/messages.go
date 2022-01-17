@@ -10,6 +10,10 @@ type MessagesRepository struct {
 	client *redis.Client
 }
 
+func NewMessagesRepository(client *redis.Client) *MessagesRepository {
+	return &MessagesRepository{client}
+}
+
 func (m *MessagesRepository) Publish(message domain.Message) error {
 	roomId := m.getRoomId(message.From, message.To)
 
