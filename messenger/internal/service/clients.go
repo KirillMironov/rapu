@@ -19,6 +19,6 @@ func (c *ClientsService) Connect(client domain.Client) {
 }
 
 func (c *ClientsService) disconnect(client domain.Client, done chan<- struct{}) {
-	client.Conn.Close()
 	done <- struct{}{}
+	client.Conn.Close()
 }
