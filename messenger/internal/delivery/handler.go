@@ -22,7 +22,7 @@ func NewHandler(service domain.ClientsService) *Handler {
 }
 
 func (h *Handler) InitRoutes() *http.ServeMux {
-	var m = http.NewServeMux()
+	var m = http.DefaultServeMux
 	m.HandleFunc("/connect", h.connect)
 	return m
 }
