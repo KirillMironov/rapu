@@ -3,15 +3,19 @@ package service
 import (
 	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/gorilla/websocket"
-	"log"
 )
 
 type MessagesService struct {
 	repository domain.MessagesRepository
+	logger     Logger
 }
 
-func NewMessagesService(repository domain.MessagesRepository) *MessagesService {
-	return &MessagesService{repository}
+type Logger interface {
+	Error(args ...interface{})
+}
+
+func NewMessagesService(repository domain.MessagesRepository, logger Logger) *MessagesService {
+	return &MessagesService{repository, logger}
 }
 
 func (m *MessagesService) Reader(client domain.Client) {
@@ -20,7 +24,9 @@ func (m *MessagesService) Reader(client domain.Client) {
 	for {
 		_, p, err := client.Conn.ReadMessage()
 		if err != nil {
-			log.Println(err)
+			if !websocket.IsCloseError(err, websocket.CloseGoingAway) {
+				m.logger.Error(err)
+			}
 			return
 		}
 
@@ -31,7 +37,7 @@ func (m *MessagesService) Reader(client domain.Client) {
 
 		err = m.repository.Publish(message, roomId)
 		if err != nil {
-			log.Println(err)
+			m.logger.Error(err)
 			return
 		}
 	}
@@ -47,7 +53,7 @@ func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 		case msg := <-sub.Channel():
 			err := client.Conn.WriteMessage(websocket.TextMessage, []byte(msg.Payload))
 			if err != nil {
-				log.Println(err)
+				m.logger.Error(err)
 				return
 			}
 		case <-done:
