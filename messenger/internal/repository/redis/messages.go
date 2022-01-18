@@ -14,9 +14,7 @@ func NewMessagesRepository(client *redis.Client) *MessagesRepository {
 	return &MessagesRepository{client}
 }
 
-func (m *MessagesRepository) Publish(message domain.Message) error {
-	roomId := m.getRoomId(message.From, message.To)
-
+func (m *MessagesRepository) Publish(message domain.Message, roomId string) error {
 	encoded, err := json.Marshal(message)
 	if err != nil {
 		return err
@@ -25,15 +23,6 @@ func (m *MessagesRepository) Publish(message domain.Message) error {
 	return m.client.Publish(roomId, encoded).Err()
 }
 
-func (m *MessagesRepository) Subscribe(from, to string) *redis.PubSub {
-	roomId := m.getRoomId(from, to)
-
+func (m *MessagesRepository) Subscribe(roomId string) *redis.PubSub {
 	return m.client.Subscribe(roomId)
-}
-
-func (m *MessagesRepository) getRoomId(from, to string) string {
-	if to < from {
-		return to + ":" + from
-	}
-	return from + ":" + to
 }

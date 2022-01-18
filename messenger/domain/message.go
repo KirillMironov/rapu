@@ -4,7 +4,6 @@ import "github.com/go-redis/redis"
 
 type Message struct {
 	From string `json:"from"`
-	To   string `json:"-"`
 	Text string `json:"text"`
 }
 
@@ -14,6 +13,6 @@ type MessagesService interface {
 }
 
 type MessagesRepository interface {
-	Publish(message Message) error
-	Subscribe(from, to string) *redis.PubSub
+	Publish(message Message, roomId string) error
+	Subscribe(roomId string) *redis.PubSub
 }

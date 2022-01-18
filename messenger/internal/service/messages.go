@@ -15,6 +15,8 @@ func NewMessagesService(repository domain.MessagesRepository) *MessagesService {
 }
 
 func (m *MessagesService) Reader(client domain.Client) {
+	roomId := m.getRoomId(client.UserId, client.ToUserId)
+
 	for {
 		_, p, err := client.Conn.ReadMessage()
 		if err != nil {
@@ -24,11 +26,10 @@ func (m *MessagesService) Reader(client domain.Client) {
 
 		var message = domain.Message{
 			From: client.UserId,
-			To:   client.ToUserId,
 			Text: string(p),
 		}
 
-		err = m.repository.Publish(message)
+		err = m.repository.Publish(message, roomId)
 		if err != nil {
 			log.Println(err)
 			return
@@ -37,7 +38,8 @@ func (m *MessagesService) Reader(client domain.Client) {
 }
 
 func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
-	sub := m.repository.Subscribe(client.UserId, client.ToUserId)
+	roomId := m.getRoomId(client.UserId, client.ToUserId)
+	sub := m.repository.Subscribe(roomId)
 	defer sub.Close()
 
 	for {
@@ -52,4 +54,11 @@ func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 			return
 		}
 	}
+}
+
+func (m *MessagesService) getRoomId(from, to string) string {
+	if to < from {
+		return to + ":" + from
+	}
+	return from + ":" + to
 }
