@@ -3,7 +3,6 @@ package delivery
 import (
 	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/gorilla/websocket"
-	"log"
 	"net/http"
 )
 
@@ -15,10 +14,16 @@ var upgrader = websocket.Upgrader{
 
 type Handler struct {
 	service domain.ClientsService
+	logger  Logger
 }
 
-func NewHandler(service domain.ClientsService) *Handler {
-	return &Handler{service}
+type Logger interface {
+	Info(args ...interface{})
+	Error(args ...interface{})
+}
+
+func NewHandler(service domain.ClientsService, logger Logger) *Handler {
+	return &Handler{service, logger}
 }
 
 func (h *Handler) InitRoutes() *http.ServeMux {
@@ -32,13 +37,14 @@ func (h *Handler) connect(w http.ResponseWriter, r *http.Request) {
 	toUserId := r.URL.Query().Get("toUserId")
 	if userId == "" || toUserId == "" {
 		w.WriteHeader(http.StatusBadRequest)
+		h.logger.Info("not enough query parameters")
 		return
 	}
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(err)
+		h.logger.Error(err)
 		return
 	}
 
