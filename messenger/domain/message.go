@@ -23,9 +23,12 @@ type MessagesService interface {
 	Writer(client Client, done <-chan struct{})
 }
 
-type MessagesRepository interface {
+type MessagesBus interface {
 	Publish(message Message, roomId string) error
 	Subscribe(roomId string) *redis.PubSub
+}
+
+type MessagesRepository interface {
 	Save(message Message, roomId string) error
 	Get(roomId string) ([]Message, error)
 }
