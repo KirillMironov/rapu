@@ -1,10 +1,21 @@
 package domain
 
-import "github.com/go-redis/redis"
+import (
+	"encoding/json"
+	"github.com/go-redis/redis"
+)
 
 type Message struct {
 	From string `json:"from"`
 	Text string `json:"text"`
+}
+
+func (m Message) MarshalBinary() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+func (m *Message) UnmarshalBinary(data []byte) error {
+	return json.Unmarshal(data, m)
 }
 
 type MessagesService interface {
@@ -15,4 +26,6 @@ type MessagesService interface {
 type MessagesRepository interface {
 	Publish(message Message, roomId string) error
 	Subscribe(roomId string) *redis.PubSub
+	Save(message Message, roomId string) error
+	Get(roomId string) ([]Message, error)
 }
