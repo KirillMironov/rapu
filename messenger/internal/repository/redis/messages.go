@@ -6,15 +6,15 @@ import (
 	"github.com/go-redis/redis"
 )
 
-type MessagesRepository struct {
+type MessagesBus struct {
 	client *redis.Client
 }
 
-func NewMessagesRepository(client *redis.Client) *MessagesRepository {
-	return &MessagesRepository{client}
+func NewMessagesBus(client *redis.Client) *MessagesBus {
+	return &MessagesBus{client}
 }
 
-func (m *MessagesRepository) Publish(message domain.Message, roomId string) error {
+func (m *MessagesBus) Publish(message domain.Message, roomId string) error {
 	encoded, err := json.Marshal(message)
 	if err != nil {
 		return err
@@ -23,8 +23,16 @@ func (m *MessagesRepository) Publish(message domain.Message, roomId string) erro
 	return m.client.Publish(roomId, encoded).Err()
 }
 
-func (m *MessagesRepository) Subscribe(roomId string) *redis.PubSub {
+func (m *MessagesBus) Subscribe(roomId string) *redis.PubSub {
 	return m.client.Subscribe(roomId)
+}
+
+type MessagesRepository struct {
+	client *redis.Client
+}
+
+func NewMessagesRepository(client *redis.Client) *MessagesRepository {
+	return &MessagesRepository{client}
 }
 
 func (m *MessagesRepository) Save(message domain.Message, roomId string) error {

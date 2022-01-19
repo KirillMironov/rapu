@@ -53,8 +53,9 @@ func main() {
 	}
 
 	// App
+	bus := repo.NewMessagesBus(client)
 	repository := repo.NewMessagesRepository(client)
-	messagesService := service.NewMessagesService(repository, logger)
+	messagesService := service.NewMessagesService(bus, repository, logger)
 	clientsService := service.NewClientsService(messagesService)
 	handler := delivery.NewHandler(clientsService, logger)
 

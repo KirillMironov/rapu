@@ -7,6 +7,7 @@ import (
 )
 
 type MessagesService struct {
+	bus        domain.MessagesBus
 	repository domain.MessagesRepository
 	logger     Logger
 }
@@ -15,8 +16,8 @@ type Logger interface {
 	Error(args ...interface{})
 }
 
-func NewMessagesService(repository domain.MessagesRepository, logger Logger) *MessagesService {
-	return &MessagesService{repository, logger}
+func NewMessagesService(bus domain.MessagesBus, repository domain.MessagesRepository, logger Logger) *MessagesService {
+	return &MessagesService{bus, repository, logger}
 }
 
 func (m *MessagesService) Reader(client domain.Client) {
@@ -36,7 +37,7 @@ func (m *MessagesService) Reader(client domain.Client) {
 			Text: string(p),
 		}
 
-		err = m.repository.Publish(message, roomId)
+		err = m.bus.Publish(message, roomId)
 		if err != nil {
 			m.logger.Error(err)
 			return
@@ -64,7 +65,7 @@ func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 		return
 	}
 
-	sub := m.repository.Subscribe(roomId)
+	sub := m.bus.Subscribe(roomId)
 	defer sub.Close()
 
 	for {
