@@ -11,6 +11,7 @@ type MessagesService struct {
 }
 
 type Logger interface {
+	Info(args ...interface{})
 	Error(args ...interface{})
 }
 
@@ -20,6 +21,12 @@ func NewMessagesService(repository domain.MessagesRepository, logger Logger) *Me
 
 func (m *MessagesService) Reader(client domain.Client) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
+
+	messages, err := m.repository.Get(roomId)
+	if err != nil {
+		m.logger.Error(err)
+	}
+	m.logger.Info(messages)
 
 	for {
 		_, p, err := client.Conn.ReadMessage()
@@ -36,6 +43,12 @@ func (m *MessagesService) Reader(client domain.Client) {
 		}
 
 		err = m.repository.Publish(message, roomId)
+		if err != nil {
+			m.logger.Error(err)
+			return
+		}
+
+		err = m.repository.Save(message, roomId)
 		if err != nil {
 			m.logger.Error(err)
 			return

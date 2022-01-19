@@ -26,3 +26,11 @@ func (m *MessagesRepository) Publish(message domain.Message, roomId string) erro
 func (m *MessagesRepository) Subscribe(roomId string) *redis.PubSub {
 	return m.client.Subscribe(roomId)
 }
+
+func (m *MessagesRepository) Save(message domain.Message, roomId string) error {
+	return m.client.RPush(roomId, message).Err()
+}
+
+func (m *MessagesRepository) Get(roomId string) (messages []domain.Message, _ error) {
+	return messages, m.client.LRange(roomId, 0, -1).ScanSlice(&messages)
+}
