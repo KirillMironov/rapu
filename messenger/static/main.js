@@ -20,8 +20,14 @@ function connect() {
 
     socket.onmessage = message => {
         let json = JSON.parse(message.data);
-        console.log(json)
-        document.getElementById('messages_area').value += `${json.from}: ${String(json.text)}\r\n`;
+
+        if (json.constructor === Array) {
+            json.forEach(msg => {
+                document.getElementById('messages_area').value += `${msg.from}: ${String(msg.text)}\r\n`;
+            });
+        } else {
+            document.getElementById('messages_area').value += `${json.from}: ${String(json.text)}\r\n`;
+        }
     };
 
     socket.onclose = event => {

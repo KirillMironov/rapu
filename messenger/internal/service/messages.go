@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/gorilla/websocket"
 )
@@ -11,7 +12,6 @@ type MessagesService struct {
 }
 
 type Logger interface {
-	Info(args ...interface{})
 	Error(args ...interface{})
 }
 
@@ -21,12 +21,6 @@ func NewMessagesService(repository domain.MessagesRepository, logger Logger) *Me
 
 func (m *MessagesService) Reader(client domain.Client) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
-
-	messages, err := m.repository.Get(roomId)
-	if err != nil {
-		m.logger.Error(err)
-	}
-	m.logger.Info(messages)
 
 	for {
 		_, p, err := client.Conn.ReadMessage()
@@ -58,6 +52,18 @@ func (m *MessagesService) Reader(client domain.Client) {
 
 func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
+
+	history, err := m.loadChatHistory(roomId)
+	if err != nil {
+		m.logger.Error(err)
+		return
+	}
+	err = client.Conn.WriteMessage(websocket.TextMessage, history)
+	if err != nil {
+		m.logger.Error(err)
+		return
+	}
+
 	sub := m.repository.Subscribe(roomId)
 	defer sub.Close()
 
@@ -73,6 +79,15 @@ func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 			return
 		}
 	}
+}
+
+func (m *MessagesService) loadChatHistory(roomId string) ([]byte, error) {
+	messages, err := m.repository.Get(roomId)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(messages)
 }
 
 func (m *MessagesService) getRoomId(from, to string) string {
