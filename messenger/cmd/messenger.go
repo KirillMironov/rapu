@@ -3,11 +3,14 @@ package main
 import (
 	"github.com/KirillMironov/rapu/messenger/config"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery"
+	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
 	repo "github.com/KirillMironov/rapu/messenger/internal/repository/redis"
 	"github.com/KirillMironov/rapu/messenger/internal/service"
 	"github.com/go-redis/redis"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"net/http"
 	"time"
@@ -52,12 +55,21 @@ func main() {
 		logger.Fatal(err)
 	}
 
+	// gRPC Users client
+	usersConn, err := grpc.Dial(cfg.UsersServiceAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal(err)
+	}
+	defer usersConn.Close()
+
+	usersClient := proto.NewUsersClient(usersConn)
+
 	// App
 	bus := repo.NewMessagesBus(client)
 	repository := repo.NewMessagesRepository(client)
 	messagesService := service.NewMessagesService(bus, repository, logger)
 	clientsService := service.NewClientsService(messagesService)
-	handler := delivery.NewHandler(clientsService, logger)
+	handler := delivery.NewHandler(usersClient, clientsService, logger)
 
 	logger.Infof("messenger started on port %s", cfg.Port)
 	logger.Fatal(http.ListenAndServe(":"+cfg.Port, handler.InitRoutes()))
