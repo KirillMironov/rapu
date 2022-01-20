@@ -1,7 +1,10 @@
 package delivery
 
 import (
+	"context"
 	"github.com/KirillMironov/rapu/messenger/domain"
+	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"net/http"
 )
@@ -13,8 +16,9 @@ var upgrader = websocket.Upgrader{
 }
 
 type Handler struct {
-	service domain.ClientsService
-	logger  Logger
+	usersClient proto.UsersClient
+	service     domain.ClientsService
+	logger      Logger
 }
 
 type Logger interface {
@@ -22,35 +26,68 @@ type Logger interface {
 	Error(args ...interface{})
 }
 
-func NewHandler(service domain.ClientsService, logger Logger) *Handler {
-	return &Handler{service, logger}
+func NewHandler(usersClient proto.UsersClient, service domain.ClientsService, logger Logger) *Handler {
+	return &Handler{
+		usersClient: usersClient,
+		service:     service,
+		logger:      logger,
+	}
 }
 
-func (h *Handler) InitRoutes() *http.ServeMux {
-	var m = http.DefaultServeMux
-	m.HandleFunc("/connect", h.connect)
-	return m
+func (h *Handler) InitRoutes() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(gin.Recovery(), h.middleware)
+
+	v1 := router.Group("/api/v1")
+	{
+		messenger := v1.Group("messenger")
+		{
+			messenger.GET("/connect", h.connect)
+		}
+	}
+
+	return router
 }
 
-func (h *Handler) connect(w http.ResponseWriter, r *http.Request) {
-	userId := r.URL.Query().Get("userId")
-	toUserId := r.URL.Query().Get("toUserId")
-	if userId == "" || toUserId == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		h.logger.Info("not enough query parameters")
+type connectForm struct {
+	ToUserId    string `form:"toUserId" binding:"required"`
+	AccessToken string `form:"accessToken" binding:"required"`
+}
+
+func (h *Handler) connect(c *gin.Context) {
+	var form connectForm
+
+	err := c.Bind(&form)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		h.logger.Info(err)
 		return
 	}
 
-	conn, err := upgrader.Upgrade(w, r, nil)
+	resp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{AccessToken: form.AccessToken})
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		c.Status(http.StatusUnauthorized)
+		h.logger.Info(err)
+		return
+	}
+
+	userId := resp.GetUserId()
+	if userId == "" {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
 		h.logger.Error(err)
 		return
 	}
 
 	var client = domain.Client{
 		UserId:   userId,
-		ToUserId: toUserId,
+		ToUserId: form.ToUserId,
 		Conn:     conn,
 	}
 
