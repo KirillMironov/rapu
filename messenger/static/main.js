@@ -8,7 +8,7 @@ function connect() {
 
     socket = new WebSocket('ws://localhost:7004/api/v1/messenger/connect?toUserId='
         + document.getElementById('toUserId').value
-        + '&accessToken='
+        + '&access_token='
         + document.getElementById('accessToken').value);
 
     console.log('Attempting Connection...');

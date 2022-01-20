@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"context"
 	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
 	"github.com/gin-gonic/gin"
@@ -41,7 +40,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	v1 := router.Group("/api/v1")
 	{
-		messenger := v1.Group("messenger")
+		messenger := v1.Group("messenger").Use(h.auth)
 		{
 			messenger.GET("/connect", h.connect)
 		}
@@ -50,31 +49,10 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	return router
 }
 
-type connectForm struct {
-	ToUserId    string `form:"toUserId" binding:"required"`
-	AccessToken string `form:"accessToken" binding:"required"`
-}
-
 func (h *Handler) connect(c *gin.Context) {
-	var form connectForm
-
-	err := c.Bind(&form)
-	if err != nil {
+	toUserId, ok := c.GetQuery("toUserId")
+	if !ok {
 		c.Status(http.StatusBadRequest)
-		h.logger.Info(err)
-		return
-	}
-
-	resp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{AccessToken: form.AccessToken})
-	if err != nil {
-		c.Status(http.StatusUnauthorized)
-		h.logger.Info(err)
-		return
-	}
-
-	userId := resp.GetUserId()
-	if userId == "" {
-		c.Status(http.StatusUnauthorized)
 		return
 	}
 
@@ -86,8 +64,8 @@ func (h *Handler) connect(c *gin.Context) {
 	}
 
 	var client = domain.Client{
-		UserId:   userId,
-		ToUserId: form.ToUserId,
+		UserId:   c.GetString(userIdKey),
+		ToUserId: toUserId,
 		Conn:     conn,
 	}
 
