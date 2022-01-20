@@ -19,6 +19,23 @@ services:
       posts:
         condition: service_started
 
+  messenger:
+    build:
+      context: ./messenger
+      dockerfile: Dockerfile
+    container_name: rapu-messenger
+    environment:
+      - PORT=7004
+      - USERS_SERVICE_ADDRESS=rapu-users:7001
+      - REDIS_ADDR=rapu-messenger_redis:6379
+    ports:
+      - '7004:7004'
+    depends_on:
+      redis:
+        condition: service_healthy
+      users:
+        condition: service_started
+
   users:
     build:
       context: ./users
@@ -87,6 +104,8 @@ services:
     container_name: rapu-messenger_redis
     ports:
       - '6379:6379'
+    volumes:
+      - rapu-messenger_redisdata:/data
     healthcheck:
       test: [ 'CMD', 'redis-cli', 'ping' ]
       interval: 5s
@@ -98,3 +117,5 @@ volumes:
     name: rapu-users_pgdata
   rapu-posts_mongodata:
     name: rapu-posts_mongodata
+  rapu-messenger_redisdata:
+    name: rapu-messenger_redisdata
