@@ -31,8 +31,8 @@ const (
 	maxLimit        = 10
 )
 
-func newClient(t *testing.T) (proto.PostsClient, func()) {
-	db, terminate := mongoSetup(t)
+func newClient(t *testing.T) proto.PostsClient {
+	db := mongoSetup(t)
 	handler := handlerSetup(db)
 
 	var listener = bufconn.Listen(1024 * 1024)
@@ -46,10 +46,11 @@ func newClient(t *testing.T) (proto.PostsClient, func()) {
 		}))
 	require.NoError(t, err)
 
-	return proto.NewPostsClient(conn), func() {
+	t.Cleanup(func() {
 		conn.Close()
-		terminate()
-	}
+	})
+
+	return proto.NewPostsClient(conn)
 }
 
 func handlerSetup(db *mongo.Collection) *grpc.Server {
@@ -58,7 +59,7 @@ func handlerSetup(db *mongo.Collection) *grpc.Server {
 	return delivery.NewHandler(svc, &mocks.LoggerMock{})
 }
 
-func mongoSetup(t *testing.T) (*mongo.Collection, func()) {
+func mongoSetup(t *testing.T) *mongo.Collection {
 	request := testcontainers.ContainerRequest{
 		Image:        mongoImage,
 		ExposedPorts: []string{mongoPort},
@@ -83,7 +84,9 @@ func mongoSetup(t *testing.T) (*mongo.Collection, func()) {
 	err = client.Ping(ctx, readpref.Primary())
 	require.NoError(t, err)
 
-	return client.Database(mongoDB).Collection(mongoCollection), func() {
+	t.Cleanup(func() {
 		container.Terminate(ctx)
-	}
+	})
+
+	return client.Database(mongoDB).Collection(mongoCollection)
 }

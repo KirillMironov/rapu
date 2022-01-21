@@ -22,8 +22,7 @@ const (
 var ctx = context.Background()
 
 func TestPosts_Create(t *testing.T) {
-	client, closeConn := newClient(t)
-	defer closeConn()
+	client := newClient(t)
 
 	_, err := client.Create(ctx, &proto.CreateRequest{
 		UserId:  userId,
@@ -73,8 +72,7 @@ func TestPosts_Create(t *testing.T) {
 }
 
 func TestPosts_GetByUserId(t *testing.T) {
-	client, closeConn := newClient(t)
-	defer closeConn()
+	client := newClient(t)
 
 	resp, err := client.GetByUserId(ctx, &proto.GetByUserIdRequest{ // posts do not exist yet
 		UserId: userId,
@@ -123,8 +121,7 @@ func TestPosts_GetByUserId(t *testing.T) {
 }
 
 func TestPosts_GetByUserId_pagination_offset(t *testing.T) {
-	client, closeConn := newClient(t)
-	defer closeConn()
+	client := newClient(t)
 
 	for i := 0; i < maxLimit; i++ {
 		_, err := client.Create(ctx, &proto.CreateRequest{
@@ -159,8 +156,7 @@ func TestPosts_GetByUserId_pagination_offset(t *testing.T) {
 }
 
 func TestPosts_GetByUserId_pagination_limit(t *testing.T) {
-	client, closeConn := newClient(t)
-	defer closeConn()
+	client := newClient(t)
 
 	for i := 0; i < maxLimit*2; i++ {
 		_, err := client.Create(ctx, &proto.CreateRequest{
