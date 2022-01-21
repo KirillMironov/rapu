@@ -33,8 +33,8 @@ const (
 	tokenTTL      = time.Minute
 )
 
-func newClient(t *testing.T) (proto.UsersClient, func()) {
-	db, terminate := postgresSetup(t)
+func newClient(t *testing.T) proto.UsersClient {
+	db := postgresSetup(t)
 	handler := handlerSetup(t, db)
 
 	var listener = bufconn.Listen(1024 * 1024)
@@ -48,10 +48,11 @@ func newClient(t *testing.T) (proto.UsersClient, func()) {
 		}))
 	require.NoError(t, err)
 
-	return proto.NewUsersClient(conn), func() {
+	t.Cleanup(func() {
 		conn.Close()
-		terminate()
-	}
+	})
+
+	return proto.NewUsersClient(conn)
 }
 
 func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
@@ -62,7 +63,7 @@ func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
 	return delivery.NewHandler(svc, mocks.LoggerMock{})
 }
 
-func postgresSetup(t *testing.T) (*sqlx.DB, func()) {
+func postgresSetup(t *testing.T) *sqlx.DB {
 	request := testcontainers.ContainerRequest{
 		Image:        postgresImage,
 		ExposedPorts: []string{"5432"},
@@ -90,7 +91,9 @@ func postgresSetup(t *testing.T) (*sqlx.DB, func()) {
 	err = m.Up()
 	require.NoError(t, err)
 
-	return db, func() {
+	t.Cleanup(func() {
 		container.Terminate(context.Background())
-	}
+	})
+
+	return db
 }
