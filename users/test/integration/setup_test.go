@@ -11,9 +11,6 @@ import (
 	"github.com/KirillMironov/rapu/users/internal/service"
 	"github.com/KirillMironov/rapu/users/pkg/auth"
 	"github.com/KirillMironov/rapu/users/test/mocks"
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -21,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
+	"io/ioutil"
 	"log"
 	"net"
 	"testing"
@@ -28,9 +26,10 @@ import (
 )
 
 const (
-	postgresImage = "postgres:12.7-alpine3.14"
-	jwtKey        = "secretKey"
-	tokenTTL      = time.Minute
+	postgresImage      = "postgres:12.7-alpine3.14"
+	postgresSchemaPath = "../../config/schema.sql"
+	jwtKey             = "secretKey"
+	tokenTTL           = time.Minute
 )
 
 func newClient(t *testing.T) proto.UsersClient {
@@ -86,9 +85,10 @@ func postgresSetup(t *testing.T) *sqlx.DB {
 	db, err := sqlx.Connect("postgres", conn)
 	require.NoError(t, err)
 
-	m, err := migrate.New("file://../testdata", conn)
+	query, err := ioutil.ReadFile(postgresSchemaPath)
 	require.NoError(t, err)
-	err = m.Up()
+
+	_, err = db.Exec(string(query))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
