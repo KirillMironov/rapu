@@ -26,7 +26,8 @@ func (m *MessagesService) Reader(client domain.Client) {
 	for {
 		_, p, err := client.Conn.ReadMessage()
 		if err != nil {
-			if !websocket.IsCloseError(err, websocket.CloseGoingAway) {
+			if !websocket.IsCloseError(err, websocket.CloseNormalClosure) &&
+				!websocket.IsCloseError(err, websocket.CloseGoingAway) {
 				m.logger.Error(err)
 			}
 			return
