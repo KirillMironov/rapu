@@ -11,9 +11,6 @@ import (
 	"github.com/KirillMironov/rapu/users/internal/service"
 	"github.com/KirillMironov/rapu/users/pkg/auth"
 	"github.com/KirillMironov/rapu/users/test/mocks"
-	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -21,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
+	"io/ioutil"
 	"log"
 	"net"
 	"testing"
@@ -28,13 +26,14 @@ import (
 )
 
 const (
-	postgresImage = "postgres:12.7-alpine3.14"
-	jwtKey        = "secretKey"
-	tokenTTL      = time.Minute
+	postgresImage      = "postgres:12.7-alpine3.14"
+	postgresSchemaPath = "../../config/schema.sql"
+	jwtKey             = "secretKey"
+	tokenTTL           = time.Minute
 )
 
-func newClient(t *testing.T) (proto.UsersClient, func()) {
-	db, terminate := postgresSetup(t)
+func newClient(t *testing.T) proto.UsersClient {
+	db := postgresSetup(t)
 	handler := handlerSetup(t, db)
 
 	var listener = bufconn.Listen(1024 * 1024)
@@ -48,10 +47,11 @@ func newClient(t *testing.T) (proto.UsersClient, func()) {
 		}))
 	require.NoError(t, err)
 
-	return proto.NewUsersClient(conn), func() {
+	t.Cleanup(func() {
 		conn.Close()
-		terminate()
-	}
+	})
+
+	return proto.NewUsersClient(conn)
 }
 
 func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
@@ -62,7 +62,7 @@ func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
 	return delivery.NewHandler(svc, mocks.LoggerMock{})
 }
 
-func postgresSetup(t *testing.T) (*sqlx.DB, func()) {
+func postgresSetup(t *testing.T) *sqlx.DB {
 	request := testcontainers.ContainerRequest{
 		Image:        postgresImage,
 		ExposedPorts: []string{"5432"},
@@ -85,12 +85,15 @@ func postgresSetup(t *testing.T) (*sqlx.DB, func()) {
 	db, err := sqlx.Connect("postgres", conn)
 	require.NoError(t, err)
 
-	m, err := migrate.New("file://../testdata", conn)
-	require.NoError(t, err)
-	err = m.Up()
+	query, err := ioutil.ReadFile(postgresSchemaPath)
 	require.NoError(t, err)
 
-	return db, func() {
+	_, err = db.Exec(string(query))
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
 		container.Terminate(context.Background())
-	}
+	})
+
+	return db
 }
