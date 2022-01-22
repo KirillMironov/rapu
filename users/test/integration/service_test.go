@@ -133,3 +133,31 @@ func Test_Authenticate(t *testing.T) {
 	st, _ = status.FromError(err)
 	assert.Equal(t, codes.Unauthenticated, st.Code())
 }
+
+func Test_UserExists(t *testing.T) {
+	client := newClient(t)
+
+	resp, _ := client.SignUp(ctx, &proto.SignUpRequest{ // create user
+		Username: testUsername,
+		Email:    testEmail,
+		Password: testPassword,
+	})
+
+	authResp, _ := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: resp.GetAccessToken()}) // get userId from token
+
+	existsResp, err := client.UserExists(ctx, &proto.UserExistsRequest{UserId: authResp.GetUserId()})
+	assert.NoError(t, err)
+	assert.True(t, existsResp.GetExists())
+
+	existsResp, err = client.UserExists(ctx, &proto.UserExistsRequest{UserId: ""}) // empty userId
+	assert.Error(t, err)
+	assert.False(t, existsResp.GetExists())
+	st, _ := status.FromError(err)
+	assert.Equal(t, codes.InvalidArgument, st.Code())
+
+	existsResp, err = client.UserExists(ctx, &proto.UserExistsRequest{UserId: "5"}) // user with userId "5" doesn't exist
+	assert.Error(t, err)
+	assert.False(t, existsResp.GetExists())
+	st, _ = status.FromError(err)
+	assert.Equal(t, codes.NotFound, st.Code())
+}

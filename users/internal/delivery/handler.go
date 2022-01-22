@@ -81,12 +81,34 @@ func (h *Handler) SignIn(_ context.Context, request *proto.SignInRequest) (*prot
 func (h *Handler) Authenticate(_ context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
 	userId, err := h.service.Authenticate(request.GetAccessToken())
 	if err != nil {
-		h.logger.Info(err)
-		if err == domain.ErrEmptyParameters {
+		switch err {
+		case domain.ErrEmptyParameters:
+			h.logger.Info(err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
+		default:
+			h.logger.Error(err)
+			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	return &proto.AuthResponse{UserId: userId}, nil
+}
+
+func (h *Handler) UserExists(_ context.Context, request *proto.UserExistsRequest) (*proto.UserExistsResponse, error) {
+	exists, err := h.service.UserExists(request.GetUserId())
+	if err != nil {
+		switch err {
+		case domain.ErrEmptyParameters:
+			h.logger.Info(err)
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		case domain.ErrUserNotFound:
+			h.logger.Info(err)
+			return nil, status.Error(codes.NotFound, err.Error())
+		default:
+			h.logger.Error(err)
+			return nil, status.Error(codes.Unknown, err.Error())
+		}
+	}
+
+	return &proto.UserExistsResponse{Exists: exists}, nil
 }

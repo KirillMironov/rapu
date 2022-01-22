@@ -70,3 +70,11 @@ func (u *UsersService) Authenticate(token string) (string, error) {
 
 	return u.tokenManager.Verify(token)
 }
+
+func (u *UsersService) UserExists(userId string) (bool, error) {
+	if userId == "" {
+		return false, domain.ErrEmptyParameters
+	}
+
+	return u.repository.CheckExistence(userId)
+}

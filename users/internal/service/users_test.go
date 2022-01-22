@@ -111,3 +111,24 @@ func TestUsersService_Authenticate(t *testing.T) {
 		}
 	}
 }
+
+func TestUsersService_UserExists(t *testing.T) {
+	t.Parallel()
+
+	testCases := []struct {
+		userId            string
+		expectedExistence bool
+		expectedError     error
+	}{
+		{"1", true, nil},
+		{"", false, domain.ErrEmptyParameters},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+
+		exists, err := service.UserExists(tc.userId)
+		assert.Equal(t, tc.expectedError, err)
+		assert.Equal(t, tc.expectedExistence, exists)
+	}
+}
