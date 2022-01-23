@@ -43,7 +43,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	v1 := router.Group("/api/v1")
 	{
-		messenger := v1.Group("messenger").Use(h.auth)
+		messenger := v1.Group("messenger")
 		{
 			messenger.GET("/connect", h.connect)
 		}
@@ -52,13 +52,12 @@ func (h *Handler) InitRoutes() *gin.Engine {
 	return router
 }
 
-func (h *Handler) connect(c *gin.Context) {
-	toUserId, ok := c.GetQuery("toUserId")
-	if !ok {
-		c.Status(http.StatusBadRequest)
-		return
-	}
+type connectForm struct {
+	ToUserId    string `form:"toUserId" binding:"required"`
+	AccessToken string `form:"access_token" binding:"required"`
+}
 
+func (h *Handler) connect(c *gin.Context) {
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -66,7 +65,39 @@ func (h *Handler) connect(c *gin.Context) {
 		return
 	}
 
-	resp, err := h.usersClient.UserExists(context.Background(), &proto.UserExistsRequest{UserId: toUserId})
+	var form connectForm
+	err = c.Bind(&form)
+	if err != nil {
+		cm := websocket.FormatCloseMessage(websocket.CloseUnsupportedData, "not enough query parameters")
+		_ = conn.WriteMessage(websocket.CloseMessage, cm)
+		conn.Close()
+		return
+	}
+
+	authResp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{AccessToken: form.AccessToken})
+	if err != nil || authResp.GetUserId() == "" {
+		defer conn.Close()
+		st, ok := status.FromError(err)
+		if !ok {
+			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			cm := websocket.FormatCloseMessage(websocket.CloseUnsupportedData, st.Message())
+			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+		case codes.Unauthenticated:
+			cm := websocket.FormatCloseMessage(websocket.ClosePolicyViolation, st.Message())
+			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+		default:
+			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+			h.logger.Error(err)
+		}
+		return
+	}
+
+	resp, err := h.usersClient.UserExists(context.Background(), &proto.UserExistsRequest{UserId: form.ToUserId})
 	if err != nil || resp.GetExists() == false {
 		defer conn.Close()
 		st, ok := status.FromError(err)
@@ -90,8 +121,8 @@ func (h *Handler) connect(c *gin.Context) {
 	}
 
 	var client = domain.Client{
-		UserId:   c.GetString(userIdKey),
-		ToUserId: toUserId,
+		UserId:   authResp.GetUserId(),
+		ToUserId: form.ToUserId,
 		Conn:     conn,
 	}
 
