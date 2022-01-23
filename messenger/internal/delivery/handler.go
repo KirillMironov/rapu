@@ -1,10 +1,13 @@
 package delivery
 
 import (
+	"context"
 	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 )
 
@@ -60,6 +63,29 @@ func (h *Handler) connect(c *gin.Context) {
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		h.logger.Error(err)
+		return
+	}
+
+	resp, err := h.usersClient.UserExists(context.Background(), &proto.UserExistsRequest{UserId: toUserId})
+	if err != nil || resp.GetExists() == false {
+		defer conn.Close()
+		st, ok := status.FromError(err)
+		if !ok {
+			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+			h.logger.Error(err)
+			return
+		}
+		switch st.Code() {
+		case codes.InvalidArgument:
+			cm := websocket.FormatCloseMessage(websocket.CloseUnsupportedData, st.Message())
+			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+		case codes.NotFound:
+			cm := websocket.FormatCloseMessage(websocket.ClosePolicyViolation, st.Message())
+			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+		default:
+			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+			h.logger.Error(err)
+		}
 		return
 	}
 
