@@ -20,8 +20,9 @@ func NewMessagesService(bus domain.MessagesBus, repository domain.MessagesReposi
 	return &MessagesService{bus, repository, logger}
 }
 
-func (m *MessagesService) Reader(client domain.Client) {
+func (m *MessagesService) Reader(client domain.Client, done chan<- struct{}) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
+	defer close(done)
 
 	for {
 		_, p, err := client.Conn.ReadMessage()
@@ -54,6 +55,7 @@ func (m *MessagesService) Reader(client domain.Client) {
 
 func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
+	defer client.Conn.Close()
 
 	history, err := m.loadChatHistory(roomId)
 	if err != nil {
