@@ -76,7 +76,6 @@ func (h *Handler) connect(c *gin.Context) {
 
 	authResp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{AccessToken: form.AccessToken})
 	if err != nil || authResp.GetUserId() == "" {
-		defer conn.Close()
 		st, ok := status.FromError(err)
 		if !ok {
 			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
@@ -94,12 +93,12 @@ func (h *Handler) connect(c *gin.Context) {
 			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
 			h.logger.Error(err)
 		}
+		conn.Close()
 		return
 	}
 
 	resp, err := h.usersClient.UserExists(context.Background(), &proto.UserExistsRequest{UserId: form.ToUserId})
 	if err != nil || resp.GetExists() == false {
-		defer conn.Close()
 		st, ok := status.FromError(err)
 		if !ok {
 			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
@@ -117,6 +116,7 @@ func (h *Handler) connect(c *gin.Context) {
 			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
 			h.logger.Error(err)
 		}
+		conn.Close()
 		return
 	}
 
