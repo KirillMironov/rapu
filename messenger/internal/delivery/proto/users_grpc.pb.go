@@ -21,6 +21,7 @@ type UsersClient interface {
 	SignUp(ctx context.Context, in *SignUpRequest, opts ...grpc.CallOption) (*Response, error)
 	SignIn(ctx context.Context, in *SignInRequest, opts ...grpc.CallOption) (*Response, error)
 	Authenticate(ctx context.Context, in *AuthRequest, opts ...grpc.CallOption) (*AuthResponse, error)
+	UserExists(ctx context.Context, in *UserExistsRequest, opts ...grpc.CallOption) (*UserExistsResponse, error)
 }
 
 type usersClient struct {
@@ -58,6 +59,15 @@ func (c *usersClient) Authenticate(ctx context.Context, in *AuthRequest, opts ..
 	return out, nil
 }
 
+func (c *usersClient) UserExists(ctx context.Context, in *UserExistsRequest, opts ...grpc.CallOption) (*UserExistsResponse, error) {
+	out := new(UserExistsResponse)
+	err := c.cc.Invoke(ctx, "/proto.Users/UserExists", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UsersServer is the server API for Users service.
 // All implementations must embed UnimplementedUsersServer
 // for forward compatibility
@@ -65,6 +75,7 @@ type UsersServer interface {
 	SignUp(context.Context, *SignUpRequest) (*Response, error)
 	SignIn(context.Context, *SignInRequest) (*Response, error)
 	Authenticate(context.Context, *AuthRequest) (*AuthResponse, error)
+	UserExists(context.Context, *UserExistsRequest) (*UserExistsResponse, error)
 	mustEmbedUnimplementedUsersServer()
 }
 
@@ -80,6 +91,9 @@ func (UnimplementedUsersServer) SignIn(context.Context, *SignInRequest) (*Respon
 }
 func (UnimplementedUsersServer) Authenticate(context.Context, *AuthRequest) (*AuthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Authenticate not implemented")
+}
+func (UnimplementedUsersServer) UserExists(context.Context, *UserExistsRequest) (*UserExistsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UserExists not implemented")
 }
 func (UnimplementedUsersServer) mustEmbedUnimplementedUsersServer() {}
 
@@ -148,6 +162,24 @@ func _Users_Authenticate_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Users_UserExists_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UserExistsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UsersServer).UserExists(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.Users/UserExists",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UsersServer).UserExists(ctx, req.(*UserExistsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Users_ServiceDesc is the grpc.ServiceDesc for Users service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -166,6 +198,10 @@ var Users_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Authenticate",
 			Handler:    _Users_Authenticate_Handler,
+		},
+		{
+			MethodName: "UserExists",
+			Handler:    _Users_UserExists_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

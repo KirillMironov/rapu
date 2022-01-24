@@ -42,14 +42,12 @@ func (h *Handler) signUp(c *gin.Context) {
 		switch st.Code() {
 		case codes.InvalidArgument:
 			c.Status(http.StatusBadRequest)
-			return
 		case codes.AlreadyExists:
 			c.Status(http.StatusConflict)
-			return
 		default:
 			c.Status(http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{accessTokenKey: resp.GetAccessToken()})
@@ -84,14 +82,12 @@ func (h *Handler) signIn(c *gin.Context) {
 		switch st.Code() {
 		case codes.InvalidArgument:
 			c.Status(http.StatusBadRequest)
-			return
 		case codes.Unauthenticated:
 			c.Status(http.StatusUnauthorized)
-			return
 		default:
 			c.Status(http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{accessTokenKey: resp.GetAccessToken()})

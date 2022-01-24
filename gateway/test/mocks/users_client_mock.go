@@ -22,3 +22,8 @@ func (UsersClientMock) Authenticate(context.Context, *proto.AuthRequest,
 	...grpc.CallOption) (*proto.AuthResponse, error) {
 	return &proto.AuthResponse{UserId: "1"}, nil
 }
+
+func (UsersClientMock) UserExists(context.Context, *proto.UserExistsRequest,
+	...grpc.CallOption) (*proto.UserExistsResponse, error) {
+	return &proto.UserExistsResponse{Exists: true}, nil
+}

@@ -6,6 +6,7 @@ service Users {
   rpc SignUp(SignUpRequest) returns (Response) {}
   rpc SignIn(SignInRequest) returns (Response) {}
   rpc Authenticate(AuthRequest) returns (AuthResponse) {}
+  rpc UserExists(UserExistsRequest) returns (UserExistsResponse) {}
 }
 
 message SignUpRequest {
@@ -29,4 +30,12 @@ message AuthRequest {
 
 message AuthResponse {
   string user_id = 1;
+}
+
+message UserExistsRequest {
+  string user_id = 1;
+}
+
+message UserExistsResponse {
+  bool exists = 1;
 }
