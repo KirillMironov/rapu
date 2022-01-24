@@ -82,17 +82,17 @@ func (h *Handler) connect(c *gin.Context) {
 			h.logger.Error(err)
 			return
 		}
+		var cm []byte
 		switch st.Code() {
 		case codes.InvalidArgument:
-			cm := websocket.FormatCloseMessage(websocket.CloseUnsupportedData, st.Message())
-			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+			cm = websocket.FormatCloseMessage(websocket.CloseUnsupportedData, st.Message())
 		case codes.Unauthenticated:
-			cm := websocket.FormatCloseMessage(websocket.ClosePolicyViolation, st.Message())
-			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+			cm = websocket.FormatCloseMessage(websocket.ClosePolicyViolation, st.Message())
 		default:
-			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+			cm = websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "")
 			h.logger.Error(err)
 		}
+		_ = conn.WriteMessage(websocket.CloseMessage, cm)
 		conn.Close()
 		return
 	}
@@ -105,17 +105,17 @@ func (h *Handler) connect(c *gin.Context) {
 			h.logger.Error(err)
 			return
 		}
+		var cm []byte
 		switch st.Code() {
 		case codes.InvalidArgument:
-			cm := websocket.FormatCloseMessage(websocket.CloseUnsupportedData, st.Message())
-			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+			cm = websocket.FormatCloseMessage(websocket.CloseUnsupportedData, st.Message())
 		case codes.NotFound:
-			cm := websocket.FormatCloseMessage(websocket.ClosePolicyViolation, st.Message())
-			_ = conn.WriteMessage(websocket.CloseMessage, cm)
+			cm = websocket.FormatCloseMessage(websocket.ClosePolicyViolation, st.Message())
 		default:
-			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
+			cm = websocket.FormatCloseMessage(websocket.CloseInternalServerErr, "")
 			h.logger.Error(err)
 		}
+		_ = conn.WriteMessage(websocket.CloseMessage, cm)
 		conn.Close()
 		return
 	}
