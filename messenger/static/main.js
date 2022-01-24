@@ -35,7 +35,7 @@ function connect() {
 
     socket.onclose = event => {
         console.log('Socket Closed Connection: ', event);
-        document.getElementById('connection_status').innerHTML = RED_CIRCLE_EMOJI + ' ' + event.type;
+        document.getElementById('connection_status').innerHTML = RED_CIRCLE_EMOJI + ' ' + event.reason;
     };
 
     socket.onerror = error => {

@@ -37,11 +37,10 @@ func (h *Handler) createPost(c *gin.Context) {
 		switch st.Code() {
 		case codes.InvalidArgument:
 			c.Status(http.StatusBadRequest)
-			return
 		default:
 			c.Status(http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
 	c.Status(http.StatusCreated)
@@ -77,14 +76,12 @@ func (h *Handler) getPostsByUserId(c *gin.Context) {
 		switch st.Code() {
 		case codes.InvalidArgument:
 			c.Status(http.StatusBadRequest)
-			return
 		case codes.NotFound:
 			c.Status(http.StatusNotFound)
-			return
 		default:
 			c.Status(http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
 	c.String(http.StatusOK, string(resp.GetPosts()))

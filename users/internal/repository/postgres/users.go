@@ -52,3 +52,17 @@ func (u *UsersRepository) GetByEmail(email string) (domain.User, error) {
 
 	return user, nil
 }
+
+func (u *UsersRepository) CheckExistence(userId string) (bool, error) {
+	var sqlStr = "SELECT FROM users WHERE id = $1"
+
+	err := u.db.QueryRowx(sqlStr, userId).Scan()
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, domain.ErrUserNotFound
+		}
+		return false, err
+	}
+
+	return true, nil
+}

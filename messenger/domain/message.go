@@ -19,7 +19,7 @@ func (m *Message) UnmarshalBinary(data []byte) error {
 }
 
 type MessagesService interface {
-	Reader(client Client)
+	Reader(client Client, done chan<- struct{})
 	Writer(client Client, done <-chan struct{})
 }
 
