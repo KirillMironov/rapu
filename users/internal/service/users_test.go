@@ -14,7 +14,7 @@ const (
 	testToken    = "token"
 )
 
-var service = NewUsersService(mocks.UsersRepositoryMock{}, mocks.TokenManagerMock{})
+var service = NewUsers(mocks.UsersRepositoryMock{}, mocks.TokenManagerMock{})
 
 func TestUsersService_SignUp(t *testing.T) {
 	t.Parallel()

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/KirillMironov/rapu/users/internal/delivery"
 	"github.com/KirillMironov/rapu/users/internal/delivery/proto"
-	"github.com/KirillMironov/rapu/users/internal/repository/postgres"
+	"github.com/KirillMironov/rapu/users/internal/repository"
 	"github.com/KirillMironov/rapu/users/internal/service"
-	"github.com/KirillMironov/rapu/users/pkg/auth"
+	"github.com/KirillMironov/rapu/users/pkg/jwt"
 	"github.com/KirillMironov/rapu/users/test/mocks"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
@@ -55,10 +55,10 @@ func newClient(t *testing.T) proto.UsersClient {
 }
 
 func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
-	manager, err := auth.NewTokenManager(jwtKey, tokenTTL)
+	manager, err := jwt.NewTokenManager(jwtKey, tokenTTL)
 	require.NoError(t, err)
-	repo := postgres.NewUsersRepository(db)
-	svc := service.NewUsersService(repo, manager)
+	repo := repository.NewUsers(db)
+	svc := service.NewUsers(repo, manager)
 	return delivery.NewHandler(svc, mocks.LoggerMock{})
 }
 

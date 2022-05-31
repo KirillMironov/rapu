@@ -10,9 +10,16 @@ import (
 )
 
 type Handler struct {
-	service domain.UsersService
+	service UsersService
 	logger  Logger
 	proto.UnimplementedUsersServer
+}
+
+type UsersService interface {
+	SignUp(domain.User) (string, error)
+	SignIn(domain.User) (string, error)
+	Authenticate(token string) (string, error)
+	UserExists(userId string) (bool, error)
 }
 
 type Logger interface {
@@ -20,7 +27,7 @@ type Logger interface {
 	Error(args ...interface{})
 }
 
-func NewHandler(usersService domain.UsersService, logger Logger) *grpc.Server {
+func NewHandler(usersService UsersService, logger Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterUsersServer(server, &Handler{
 		service: usersService,
