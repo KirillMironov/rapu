@@ -2,7 +2,7 @@
 .PHONY: test
 
 build:
-	CGO_ENABLED=0 go build -o ./users ./cmd/users.go
+	CGO_ENABLED=0 go build .
 
 test:
 	go test -count=1 ./...
