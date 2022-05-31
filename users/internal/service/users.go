@@ -9,6 +9,7 @@ import (
 type Users struct {
 	repository   UsersRepository
 	tokenManager TokenManager
+	logger       Logger
 }
 
 type UsersRepository interface {
@@ -22,10 +23,15 @@ type TokenManager interface {
 	Verify(token string) (string, error)
 }
 
-func NewUsers(repository UsersRepository, tokenManager TokenManager) *Users {
+type Logger interface {
+	Error(args ...interface{})
+}
+
+func NewUsers(repository UsersRepository, tokenManager TokenManager, logger Logger) *Users {
 	return &Users{
 		repository:   repository,
 		tokenManager: tokenManager,
+		logger:       logger,
 	}
 }
 
@@ -36,16 +42,24 @@ func (u *Users) SignUp(user domain.User) (string, error) {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
+		u.logger.Error(err)
 		return "", err
 	}
 	user.Password = string(hash)
 
 	userId, err := u.repository.Create(user)
 	if err != nil {
+		u.logger.Error(err)
 		return "", err
 	}
 
-	return u.tokenManager.Generate(userId)
+	token, err := u.tokenManager.Generate(userId)
+	if err != nil {
+		u.logger.Error(err)
+		return "", err
+	}
+
+	return token, nil
 }
 
 func (u *Users) SignIn(input domain.User) (string, error) {
@@ -63,10 +77,17 @@ func (u *Users) SignIn(input domain.User) (string, error) {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 			return "", domain.ErrWrongPassword
 		}
+		u.logger.Error(err)
 		return "", err
 	}
 
-	return u.tokenManager.Generate(user.Id)
+	token, err := u.tokenManager.Generate(user.Id)
+	if err != nil {
+		u.logger.Error(err)
+		return "", err
+	}
+
+	return token, nil
 }
 
 func (u *Users) Authenticate(token string) (string, error) {
@@ -74,7 +95,13 @@ func (u *Users) Authenticate(token string) (string, error) {
 		return "", domain.ErrEmptyParameters
 	}
 
-	return u.tokenManager.Verify(token)
+	userId, err := u.tokenManager.Verify(token)
+	if err != nil {
+		u.logger.Error(err)
+		return "", err
+	}
+
+	return userId, nil
 }
 
 func (u *Users) UserExists(userId string) (bool, error) {
@@ -82,5 +109,11 @@ func (u *Users) UserExists(userId string) (bool, error) {
 		return false, domain.ErrEmptyParameters
 	}
 
-	return u.repository.CheckExistence(userId)
+	exists, err := u.repository.CheckExistence(userId)
+	if err != nil {
+		u.logger.Error(err)
+		return false, err
+	}
+
+	return exists, nil
 }
