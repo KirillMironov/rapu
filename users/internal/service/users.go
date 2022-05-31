@@ -2,7 +2,7 @@ package service
 
 import (
 	"errors"
-	"github.com/KirillMironov/rapu/users/domain"
+	"github.com/KirillMironov/rapu/users/internal/domain"
 	"golang.org/x/crypto/bcrypt"
 )
 

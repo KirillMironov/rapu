@@ -1,8 +1,6 @@
 package mocks
 
-import (
-	"github.com/KirillMironov/rapu/users/domain"
-)
+import "github.com/KirillMironov/rapu/users/internal/domain"
 
 type UsersServiceMock struct{}
 
