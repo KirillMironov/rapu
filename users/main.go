@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/KirillMironov/rapu/users/config"
 	"github.com/KirillMironov/rapu/users/internal/delivery"
-	"github.com/KirillMironov/rapu/users/internal/repository/postgres"
+	"github.com/KirillMironov/rapu/users/internal/repository"
 	"github.com/KirillMironov/rapu/users/internal/service"
-	"github.com/KirillMironov/rapu/users/pkg/auth"
+	"github.com/KirillMironov/rapu/users/pkg/jwt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -34,14 +34,14 @@ func main() {
 	}
 
 	// JWT manager
-	tokenManager, err := auth.NewTokenManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
+	tokenManager, err := jwt.NewTokenManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	// App
-	usersRepo := postgres.NewUsersRepository(db)
-	usersService := service.NewUsersService(usersRepo, tokenManager)
+	usersRepository := repository.NewUsers(db)
+	usersService := service.NewUsers(usersRepository, tokenManager)
 	handler := delivery.NewHandler(usersService, logger)
 
 	listener, err := net.Listen("tcp", ":"+cfg.Port)
@@ -49,6 +49,6 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	logger.Infof("server started on port %s", cfg.Port)
+	logger.Infof("started on port %s", cfg.Port)
 	logger.Fatal(handler.Serve(listener))
 }

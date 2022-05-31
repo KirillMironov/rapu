@@ -1,4 +1,4 @@
-package postgres
+package repository
 
 import (
 	"database/sql"
@@ -9,15 +9,15 @@ import (
 	"time"
 )
 
-type UsersRepository struct {
+type Users struct {
 	db *sqlx.DB
 }
 
-func NewUsersRepository(db *sqlx.DB) *UsersRepository {
-	return &UsersRepository{db: db}
+func NewUsers(db *sqlx.DB) *Users {
+	return &Users{db: db}
 }
 
-func (u *UsersRepository) Create(user domain.User) (string, error) {
+func (u *Users) Create(user domain.User) (string, error) {
 	var sqlStr = "INSERT INTO users (username, email, password, created_at) VALUES ($1, $2, $3, $4) RETURNING id"
 	var userId string
 
@@ -38,7 +38,7 @@ func (u *UsersRepository) Create(user domain.User) (string, error) {
 	return userId, tx.Commit()
 }
 
-func (u *UsersRepository) GetByEmail(email string) (domain.User, error) {
+func (u *Users) GetByEmail(email string) (domain.User, error) {
 	var sqlStr = "SELECT id, password FROM users WHERE email = $1"
 	var user domain.User
 
@@ -53,7 +53,7 @@ func (u *UsersRepository) GetByEmail(email string) (domain.User, error) {
 	return user, nil
 }
 
-func (u *UsersRepository) CheckExistence(userId string) (bool, error) {
+func (u *Users) CheckExistence(userId string) (bool, error) {
 	var sqlStr = "SELECT FROM users WHERE id = $1"
 
 	err := u.db.QueryRowx(sqlStr, userId).Scan()

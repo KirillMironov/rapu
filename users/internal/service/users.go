@@ -6,9 +6,15 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UsersService struct {
-	repository   domain.UsersRepository
+type Users struct {
+	repository   UsersRepository
 	tokenManager TokenManager
+}
+
+type UsersRepository interface {
+	Create(domain.User) (string, error)
+	GetByEmail(email string) (domain.User, error)
+	CheckExistence(userId string) (bool, error)
 }
 
 type TokenManager interface {
@@ -16,14 +22,14 @@ type TokenManager interface {
 	Verify(token string) (string, error)
 }
 
-func NewUsersService(repository domain.UsersRepository, tokenManager TokenManager) *UsersService {
-	return &UsersService{
+func NewUsers(repository UsersRepository, tokenManager TokenManager) *Users {
+	return &Users{
 		repository:   repository,
 		tokenManager: tokenManager,
 	}
 }
 
-func (u *UsersService) SignUp(user domain.User) (string, error) {
+func (u *Users) SignUp(user domain.User) (string, error) {
 	if user.Username == "" || user.Email == "" || user.Password == "" {
 		return "", domain.ErrEmptyParameters
 	}
@@ -42,7 +48,7 @@ func (u *UsersService) SignUp(user domain.User) (string, error) {
 	return u.tokenManager.Generate(userId)
 }
 
-func (u *UsersService) SignIn(input domain.User) (string, error) {
+func (u *Users) SignIn(input domain.User) (string, error) {
 	if input.Email == "" || input.Password == "" {
 		return "", domain.ErrEmptyParameters
 	}
@@ -63,7 +69,7 @@ func (u *UsersService) SignIn(input domain.User) (string, error) {
 	return u.tokenManager.Generate(user.Id)
 }
 
-func (u *UsersService) Authenticate(token string) (string, error) {
+func (u *Users) Authenticate(token string) (string, error) {
 	if token == "" {
 		return "", domain.ErrEmptyParameters
 	}
@@ -71,7 +77,7 @@ func (u *UsersService) Authenticate(token string) (string, error) {
 	return u.tokenManager.Verify(token)
 }
 
-func (u *UsersService) UserExists(userId string) (bool, error) {
+func (u *Users) UserExists(userId string) (bool, error) {
 	if userId == "" {
 		return false, domain.ErrEmptyParameters
 	}
