@@ -41,8 +41,8 @@ func main() {
 
 	// App
 	usersRepository := repository.NewUsers(db)
-	usersService := service.NewUsers(usersRepository, tokenManager)
-	handler := delivery.NewHandler(usersService, logger)
+	usersService := service.NewUsers(usersRepository, tokenManager, logger)
+	handler := delivery.NewHandler(usersService)
 
 	listener, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
