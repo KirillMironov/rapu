@@ -2,8 +2,8 @@ package delivery
 
 import (
 	"context"
-	"github.com/KirillMironov/rapu/users/domain"
 	"github.com/KirillMironov/rapu/users/internal/delivery/proto"
+	"github.com/KirillMironov/rapu/users/internal/domain"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

@@ -3,7 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"github.com/KirillMironov/rapu/users/domain"
+	"github.com/KirillMironov/rapu/users/internal/domain"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"time"

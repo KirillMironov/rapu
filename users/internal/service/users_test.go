@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/KirillMironov/rapu/users/domain"
+	"github.com/KirillMironov/rapu/users/internal/domain"
 	"github.com/KirillMironov/rapu/users/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"testing"
