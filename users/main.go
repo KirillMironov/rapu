@@ -9,6 +9,8 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"net"
+	"os"
+	"os/signal"
 )
 
 func main() {
@@ -33,21 +35,34 @@ func main() {
 	}
 
 	// JWT manager
-	tokenManager, err := service.NewJWTManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
+	jwtManager, err := service.NewJWTManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
 	// App
 	usersRepository := repository.NewUsers(db)
-	usersService := service.NewUsers(usersRepository, tokenManager, logger)
+	usersService := service.NewUsers(usersRepository, jwtManager, logger)
 	handler := delivery.NewHandler(usersService)
 
+	// gRPC Server
 	listener, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	logger.Infof("started on port %s", cfg.Port)
-	logger.Fatal(handler.Serve(listener))
+	logger.Infof("gRPC server started on port %s", cfg.Port)
+	go func() {
+		err = handler.Serve(listener)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}()
+
+	// Graceful Shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	logger.Infof("shutting down gRPC server")
+	handler.GracefulStop()
 }
