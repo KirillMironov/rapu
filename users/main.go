@@ -5,7 +5,6 @@ import (
 	"github.com/KirillMironov/rapu/users/internal/delivery"
 	"github.com/KirillMironov/rapu/users/internal/repository"
 	"github.com/KirillMironov/rapu/users/internal/service"
-	"github.com/KirillMironov/rapu/users/pkg/jwt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -34,7 +33,7 @@ func main() {
 	}
 
 	// JWT manager
-	tokenManager, err := jwt.NewTokenManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
+	tokenManager, err := service.NewJWTManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
 	if err != nil {
 		logger.Fatal(err)
 	}

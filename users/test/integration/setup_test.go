@@ -9,7 +9,6 @@ import (
 	"github.com/KirillMironov/rapu/users/internal/delivery/proto"
 	"github.com/KirillMironov/rapu/users/internal/repository"
 	"github.com/KirillMironov/rapu/users/internal/service"
-	"github.com/KirillMironov/rapu/users/pkg/jwt"
 	"github.com/KirillMironov/rapu/users/test/mocks"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/require"
@@ -55,7 +54,7 @@ func newClient(t *testing.T) proto.UsersClient {
 }
 
 func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
-	manager, err := jwt.NewTokenManager(jwtKey, tokenTTL)
+	manager, err := service.NewJWTManager(jwtKey, tokenTTL)
 	require.NoError(t, err)
 	usersRepository := repository.NewUsers(db)
 	usersService := service.NewUsers(usersRepository, manager, mocks.LoggerMock{})

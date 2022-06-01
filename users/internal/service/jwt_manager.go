@@ -1,4 +1,4 @@
-package jwt
+package service
 
 import (
 	"errors"
@@ -7,36 +7,36 @@ import (
 	"time"
 )
 
-type TokenManager struct {
+type JWTManager struct {
 	JWTKey   string
 	TokenTTL time.Duration
 }
 
-func NewTokenManager(JWTKey string, tokenTTL time.Duration) (*TokenManager, error) {
+func NewJWTManager(JWTKey string, tokenTTL time.Duration) (*JWTManager, error) {
 	if JWTKey == "" {
 		return nil, errors.New("JWT key was not provided")
 	}
-	return &TokenManager{JWTKey: JWTKey, TokenTTL: tokenTTL}, nil
+	return &JWTManager{JWTKey: JWTKey, TokenTTL: tokenTTL}, nil
 }
 
-func (m TokenManager) Generate(userId string) (string, error) {
+func (jm JWTManager) Generate(userId string) (string, error) {
 	currentTime := time.Now()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Subject:   userId,
-		ExpiresAt: jwt.NewNumericDate(currentTime.Add(m.TokenTTL)),
+		ExpiresAt: jwt.NewNumericDate(currentTime.Add(jm.TokenTTL)),
 		IssuedAt:  jwt.NewNumericDate(currentTime),
 	})
 
-	return token.SignedString([]byte(m.JWTKey))
+	return token.SignedString([]byte(jm.JWTKey))
 }
 
-func (m TokenManager) Verify(token string) (string, error) {
+func (jm JWTManager) Verify(token string) (string, error) {
 	tkn, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(m.JWTKey), nil
+		return []byte(jm.JWTKey), nil
 	})
 	if err != nil {
 		return "", err

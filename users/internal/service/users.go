@@ -7,9 +7,9 @@ import (
 )
 
 type Users struct {
-	repository   UsersRepository
-	tokenManager TokenManager
-	logger       Logger
+	usersRepository UsersRepository
+	jwtService      JWTService
+	logger          Logger
 }
 
 type UsersRepository interface {
@@ -18,7 +18,7 @@ type UsersRepository interface {
 	CheckExistence(userId string) (bool, error)
 }
 
-type TokenManager interface {
+type JWTService interface {
 	Generate(userId string) (string, error)
 	Verify(token string) (string, error)
 }
@@ -27,11 +27,11 @@ type Logger interface {
 	Error(args ...interface{})
 }
 
-func NewUsers(repository UsersRepository, tokenManager TokenManager, logger Logger) *Users {
+func NewUsers(usersRepository UsersRepository, jwtService JWTService, logger Logger) *Users {
 	return &Users{
-		repository:   repository,
-		tokenManager: tokenManager,
-		logger:       logger,
+		usersRepository: usersRepository,
+		jwtService:      jwtService,
+		logger:          logger,
 	}
 }
 
@@ -47,13 +47,13 @@ func (u *Users) SignUp(user domain.User) (string, error) {
 	}
 	user.Password = string(hash)
 
-	userId, err := u.repository.Create(user)
+	userId, err := u.usersRepository.Create(user)
 	if err != nil {
 		u.logger.Error(err)
 		return "", err
 	}
 
-	token, err := u.tokenManager.Generate(userId)
+	token, err := u.jwtService.Generate(userId)
 	if err != nil {
 		u.logger.Error(err)
 		return "", err
@@ -67,7 +67,7 @@ func (u *Users) SignIn(input domain.User) (string, error) {
 		return "", domain.ErrEmptyParameters
 	}
 
-	user, err := u.repository.GetByEmail(input.Email)
+	user, err := u.usersRepository.GetByEmail(input.Email)
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +81,7 @@ func (u *Users) SignIn(input domain.User) (string, error) {
 		return "", err
 	}
 
-	token, err := u.tokenManager.Generate(user.Id)
+	token, err := u.jwtService.Generate(user.Id)
 	if err != nil {
 		u.logger.Error(err)
 		return "", err
@@ -95,7 +95,7 @@ func (u *Users) Authenticate(token string) (string, error) {
 		return "", domain.ErrEmptyParameters
 	}
 
-	userId, err := u.tokenManager.Verify(token)
+	userId, err := u.jwtService.Verify(token)
 	if err != nil {
 		u.logger.Error(err)
 		return "", err
@@ -109,7 +109,7 @@ func (u *Users) UserExists(userId string) (bool, error) {
 		return false, domain.ErrEmptyParameters
 	}
 
-	exists, err := u.repository.CheckExistence(userId)
+	exists, err := u.usersRepository.CheckExistence(userId)
 	if err != nil {
 		u.logger.Error(err)
 		return false, err
