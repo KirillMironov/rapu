@@ -62,7 +62,7 @@ func (h *Handler) SignIn(_ context.Context, request *proto.SignInRequest) (*prot
 		switch err {
 		case domain.ErrEmptyParameters:
 			return nil, status.Error(codes.InvalidArgument, err.Error())
-		case domain.ErrUserNotFound, domain.ErrWrongPassword:
+		case domain.ErrUserNotFound, domain.ErrInvalidCredentials:
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		default:
 			return nil, status.Error(codes.Unknown, err.Error())
