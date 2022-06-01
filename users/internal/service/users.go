@@ -75,7 +75,7 @@ func (u *Users) SignIn(input domain.User) (string, error) {
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return "", domain.ErrWrongPassword
+			return "", domain.ErrInvalidCredentials
 		}
 		u.logger.Error(err)
 		return "", err
