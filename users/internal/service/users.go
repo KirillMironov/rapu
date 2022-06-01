@@ -13,14 +13,14 @@ type Users struct {
 }
 
 type UsersRepository interface {
-	Create(domain.User) (string, error)
+	Create(domain.User) (userId string, err error)
 	GetByEmail(email string) (domain.User, error)
 	CheckExistence(userId string) (bool, error)
 }
 
 type JWTService interface {
-	Generate(userId string) (string, error)
-	Verify(token string) (string, error)
+	Generate(userId string) (token string, err error)
+	Verify(token string) (userId string, err error)
 }
 
 type Logger interface {
