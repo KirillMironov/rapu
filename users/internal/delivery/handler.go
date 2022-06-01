@@ -15,9 +15,9 @@ type Handler struct {
 }
 
 type UsersService interface {
-	SignUp(domain.User) (string, error)
-	SignIn(domain.User) (string, error)
-	Authenticate(token string) (string, error)
+	SignUp(domain.User) (token string, err error)
+	SignIn(domain.User) (token string, err error)
+	Authenticate(token string) (userId string, err error)
 	UserExists(userId string) (bool, error)
 }
 
