@@ -1,4 +1,4 @@
-package jwt
+package service
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -15,17 +15,17 @@ const (
 func TestManager(t *testing.T) {
 	t.Parallel()
 
-	_, err := NewTokenManager("", tokenTTL)
+	_, err := NewJWTManager("", tokenTTL)
 	assert.Error(t, err)
 
-	_, err = NewTokenManager(JWTKey, tokenTTL)
+	_, err = NewJWTManager(JWTKey, tokenTTL)
 	assert.NoError(t, err)
 }
 
 func TestManager_GenerateAuthToken(t *testing.T) {
 	t.Parallel()
 
-	tokenManager, err := NewTokenManager(JWTKey, tokenTTL)
+	tokenManager, err := NewJWTManager(JWTKey, tokenTTL)
 	assert.NoError(t, err)
 
 	token, err := tokenManager.Generate(userId)
@@ -40,7 +40,7 @@ func TestManager_GenerateAuthToken(t *testing.T) {
 func TestManager_VerifyAuthToken(t *testing.T) {
 	t.Parallel()
 
-	tokenManager, err := NewTokenManager(JWTKey, tokenTTL)
+	tokenManager, err := NewJWTManager(JWTKey, tokenTTL)
 	assert.NoError(t, err)
 
 	// token TTL = 60 Min
@@ -53,7 +53,7 @@ func TestManager_VerifyAuthToken(t *testing.T) {
 	assert.NoError(t, err)
 
 	// token TTL = -60 Min
-	tokenManager, err = NewTokenManager(JWTKey, time.Duration(-60*int64(time.Minute)))
+	tokenManager, err = NewJWTManager(JWTKey, time.Duration(-60*int64(time.Minute)))
 	assert.NoError(t, err)
 
 	token, err = tokenManager.Generate(userId)
