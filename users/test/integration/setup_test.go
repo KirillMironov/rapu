@@ -57,7 +57,7 @@ func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
 	manager, err := service.NewJWTManager(jwtKey, tokenTTL)
 	require.NoError(t, err)
 	usersRepository := repository.NewUsers(db)
-	usersService := service.NewUsers(usersRepository, manager, mock.LoggerMock{})
+	usersService := service.NewUsers(usersRepository, manager, mock.Logger{})
 	return delivery.NewHandler(usersService)
 }
 
