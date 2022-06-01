@@ -49,7 +49,9 @@ func (u *Users) SignUp(user domain.User) (string, error) {
 
 	userId, err := u.usersRepository.Create(user)
 	if err != nil {
-		u.logger.Error(err)
+		if !errors.Is(err, domain.ErrUserAlreadyExists) {
+			u.logger.Error(err)
+		}
 		return "", err
 	}
 
@@ -69,6 +71,9 @@ func (u *Users) SignIn(input domain.User) (string, error) {
 
 	user, err := u.usersRepository.GetByEmail(input.Email)
 	if err != nil {
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			u.logger.Error(err)
+		}
 		return "", err
 	}
 
@@ -111,7 +116,9 @@ func (u *Users) UserExists(userId string) (bool, error) {
 
 	exists, err := u.usersRepository.CheckExistence(userId)
 	if err != nil {
-		u.logger.Error(err)
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			u.logger.Error(err)
+		}
 		return false, err
 	}
 
