@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 type TokenManagerMock struct{}
 

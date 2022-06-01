@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/KirillMironov/rapu/users/internal/domain"
-	"github.com/KirillMironov/rapu/users/test/mocks"
+	"github.com/KirillMironov/rapu/users/test/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -14,7 +14,7 @@ const (
 	testToken    = "token"
 )
 
-var usersService = NewUsers(mocks.UsersRepositoryMock{}, mocks.TokenManagerMock{}, mocks.LoggerMock{})
+var usersService = NewUsers(mock.UsersRepositoryMock{}, mock.TokenManagerMock{}, mock.LoggerMock{})
 
 func TestUsersService_SignUp(t *testing.T) {
 	t.Parallel()
