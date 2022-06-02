@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"github.com/KirillMironov/rapu/users/internal/domain"
 	"golang.org/x/crypto/bcrypt"
@@ -13,9 +14,9 @@ type Users struct {
 }
 
 type UsersRepository interface {
-	Create(domain.User) (userId string, err error)
-	GetByEmail(email string) (domain.User, error)
-	CheckExistence(userId string) (bool, error)
+	Create(context.Context, domain.User) (userId string, err error)
+	GetByEmail(ctx context.Context, email string) (domain.User, error)
+	CheckExistence(ctx context.Context, userId string) (bool, error)
 }
 
 type JWTService interface {
@@ -35,7 +36,7 @@ func NewUsers(usersRepository UsersRepository, jwtService JWTService, logger Log
 	}
 }
 
-func (u *Users) SignUp(user domain.User) (string, error) {
+func (u *Users) SignUp(ctx context.Context, user domain.User) (string, error) {
 	if user.Username == "" || user.Email == "" || user.Password == "" {
 		return "", domain.ErrEmptyParameters
 	}
@@ -47,7 +48,7 @@ func (u *Users) SignUp(user domain.User) (string, error) {
 	}
 	user.Password = string(hash)
 
-	userId, err := u.usersRepository.Create(user)
+	userId, err := u.usersRepository.Create(ctx, user)
 	if err != nil {
 		if !errors.Is(err, domain.ErrUserAlreadyExists) {
 			u.logger.Error(err)
@@ -64,12 +65,12 @@ func (u *Users) SignUp(user domain.User) (string, error) {
 	return token, nil
 }
 
-func (u *Users) SignIn(input domain.User) (string, error) {
+func (u *Users) SignIn(ctx context.Context, input domain.User) (string, error) {
 	if input.Email == "" || input.Password == "" {
 		return "", domain.ErrEmptyParameters
 	}
 
-	user, err := u.usersRepository.GetByEmail(input.Email)
+	user, err := u.usersRepository.GetByEmail(ctx, input.Email)
 	if err != nil {
 		if !errors.Is(err, domain.ErrUserNotFound) {
 			u.logger.Error(err)
@@ -109,12 +110,12 @@ func (u *Users) Authenticate(token string) (string, error) {
 	return userId, nil
 }
 
-func (u *Users) UserExists(userId string) (bool, error) {
+func (u *Users) UserExists(ctx context.Context, userId string) (bool, error) {
 	if userId == "" {
 		return false, domain.ErrEmptyParameters
 	}
 
-	exists, err := u.usersRepository.CheckExistence(userId)
+	exists, err := u.usersRepository.CheckExistence(ctx, userId)
 	if err != nil {
 		if !errors.Is(err, domain.ErrUserNotFound) {
 			u.logger.Error(err)
