@@ -124,7 +124,7 @@ func Test_Authenticate(t *testing.T) {
 
 	var token = resp.GetAccessToken()
 
-	authResp, err := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: token}) // get userId from token
+	authResp, err := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: token}) // userId from token
 	assert.NoError(t, err)
 	assert.NotEmpty(t, authResp.GetUserId())
 
@@ -153,7 +153,8 @@ func Test_UserExists(t *testing.T) {
 		Password: testPassword,
 	})
 
-	authResp, _ := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: resp.GetAccessToken()}) // get userId from token
+	authResp, err := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: resp.GetAccessToken()}) // userId from token
+	assert.NoError(t, err)
 
 	existsResp, err := client.UserExists(ctx, &proto.UserExistsRequest{UserId: authResp.GetUserId()})
 	assert.NoError(t, err)
@@ -165,7 +166,7 @@ func Test_UserExists(t *testing.T) {
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.InvalidArgument, st.Code())
 
-	existsResp, err = client.UserExists(ctx, &proto.UserExistsRequest{UserId: "5"}) // user with userId "5" doesn't exist
+	existsResp, err = client.UserExists(ctx, &proto.UserExistsRequest{UserId: "5"}) // user doesn't exist
 	assert.Error(t, err)
 	assert.False(t, existsResp.GetExists())
 	st, _ = status.FromError(err)
