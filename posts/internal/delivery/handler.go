@@ -3,73 +3,65 @@ package delivery
 import (
 	"context"
 	"encoding/json"
-	"github.com/KirillMironov/rapu/posts/domain"
 	"github.com/KirillMironov/rapu/posts/internal/delivery/proto"
+	"github.com/KirillMironov/rapu/posts/internal/domain"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
-	service domain.PostsService
-	logger  Logger
+	postsService PostsService
 	proto.UnimplementedPostsServer
 }
 
-type Logger interface {
-	Info(args ...interface{})
-	Error(args ...interface{})
+type PostsService interface {
+	Create(context.Context, domain.Post) error
+	GetByUserId(ctx context.Context, userId, offset string, limit int64) ([]domain.Post, error)
 }
 
-func NewHandler(service domain.PostsService, logger Logger) *grpc.Server {
+func NewHandler(postsService PostsService) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterPostsServer(server, &Handler{
-		service: service,
-		logger:  logger,
+		postsService: postsService,
 	})
 	return server
 }
 
-func (h *Handler) Create(_ context.Context, request *proto.CreateRequest) (*proto.CreateResponse, error) {
+func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*proto.CreateResponse, error) {
 	var post = domain.Post{
 		UserId:  request.GetUserId(),
 		Message: request.GetMessage(),
 	}
 
-	err := h.service.Create(post)
+	err := h.postsService.Create(ctx, post)
 	if err != nil {
 		switch err {
 		case domain.ErrEmptyParameters:
-			h.logger.Info(err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		default:
-			h.logger.Error(err)
-			return nil, err
+			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
 
 	return &proto.CreateResponse{}, nil
 }
 
-func (h *Handler) GetByUserId(_ context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
-	posts, err := h.service.GetByUserId(request.GetUserId(), request.GetOffset(), request.GetLimit())
+func (h *Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
+	posts, err := h.postsService.GetByUserId(ctx, request.GetUserId(), request.GetOffset(), request.GetLimit())
 	if err != nil {
 		switch err {
 		case domain.ErrEmptyParameters:
-			h.logger.Info(err)
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		case domain.ErrEmptyResult:
-			h.logger.Info(err)
 			return nil, status.Error(codes.NotFound, err.Error())
 		default:
-			h.logger.Error(err)
-			return nil, err
+			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
 
 	encoded, err := json.Marshal(posts)
 	if err != nil {
-		h.logger.Error(err)
 		return nil, err
 	}
 
