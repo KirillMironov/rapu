@@ -1,30 +1,28 @@
-package mongo
+package repository
 
 import (
 	"context"
-	"github.com/KirillMironov/rapu/posts/domain"
+	"github.com/KirillMironov/rapu/posts/internal/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var ctx = context.Background()
-
-type PostsRepository struct {
+type Posts struct {
 	db *mongo.Collection
 }
 
-func NewPostsRepository(db *mongo.Collection) *PostsRepository {
-	return &PostsRepository{db: db}
+func NewPosts(db *mongo.Collection) *Posts {
+	return &Posts{db: db}
 }
 
-func (p *PostsRepository) Create(post domain.Post) error {
+func (p *Posts) Create(ctx context.Context, post domain.Post) error {
 	_, err := p.db.InsertOne(ctx, post)
 	return err
 }
 
-func (p *PostsRepository) GetByUserId(userId, offset string, limit int64) ([]domain.Post, error) {
+func (p *Posts) GetByUserId(ctx context.Context, userId, offset string, limit int64) ([]domain.Post, error) {
 	id, err := primitive.ObjectIDFromHex(offset)
 	if err != nil && err != primitive.ErrInvalidHex {
 		return nil, err

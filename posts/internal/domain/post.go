@@ -11,13 +11,3 @@ type Post struct {
 	Message   string             `json:"message" bson:"message"`
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
 }
-
-type PostsService interface {
-	Create(Post) error
-	GetByUserId(userId, offset string, limit int64) ([]Post, error)
-}
-
-type PostsRepository interface {
-	Create(Post) error
-	GetByUserId(userId, offset string, limit int64) ([]Post, error)
-}

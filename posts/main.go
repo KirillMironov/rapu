@@ -4,16 +4,16 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/posts/config"
 	"github.com/KirillMironov/rapu/posts/internal/delivery"
-	_repository "github.com/KirillMironov/rapu/posts/internal/repository/mongo"
-	_service "github.com/KirillMironov/rapu/posts/internal/service"
+	"github.com/KirillMironov/rapu/posts/internal/repository"
+	"github.com/KirillMironov/rapu/posts/internal/service"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"net"
+	"os"
+	"os/signal"
 )
-
-var ctx = context.Background()
 
 func main() {
 	// Logger
@@ -31,6 +31,8 @@ func main() {
 	}
 
 	// Mongo
+	ctx := context.Background()
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.Mongo.ConnectionString))
 	if err != nil {
 		logger.Fatal(err)
@@ -44,15 +46,28 @@ func main() {
 	db := client.Database(cfg.Mongo.DBName).Collection(cfg.Mongo.Collection)
 
 	// App
-	repository := _repository.NewPostsRepository(db)
-	service := _service.NewPostsService(repository, cfg.MaxPostsPerPage)
-	handler := delivery.NewHandler(service, logger)
+	postsRepository := repository.NewPosts(db)
+	postsService := service.NewPosts(postsRepository, cfg.MaxPostsPerPage, logger)
+	handler := delivery.NewHandler(postsService)
 
+	// gRPC Server
 	listener, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	logger.Infof("server started on port %s", cfg.Port)
-	logger.Fatal(handler.Serve(listener))
+	logger.Infof("gRPC server started on port %s", cfg.Port)
+	go func() {
+		err = handler.Serve(listener)
+		if err != nil {
+			logger.Fatal(err)
+		}
+	}()
+
+	// Graceful Shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	logger.Infof("shutting down gRPC server")
+	handler.GracefulStop()
 }
