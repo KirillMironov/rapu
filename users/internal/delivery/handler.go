@@ -15,10 +15,10 @@ type Handler struct {
 }
 
 type UsersService interface {
-	SignUp(domain.User) (token string, err error)
-	SignIn(domain.User) (token string, err error)
+	SignUp(context.Context, domain.User) (token string, err error)
+	SignIn(context.Context, domain.User) (token string, err error)
 	Authenticate(token string) (userId string, err error)
-	UserExists(userId string) (bool, error)
+	UserExists(ctx context.Context, userId string) (bool, error)
 }
 
 func NewHandler(usersService UsersService) *grpc.Server {
@@ -29,14 +29,14 @@ func NewHandler(usersService UsersService) *grpc.Server {
 	return server
 }
 
-func (h *Handler) SignUp(_ context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
+func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
 	var user = domain.User{
 		Username: request.GetUsername(),
 		Email:    request.GetEmail(),
 		Password: request.GetPassword(),
 	}
 
-	token, err := h.usersService.SignUp(user)
+	token, err := h.usersService.SignUp(ctx, user)
 	if err != nil {
 		switch err {
 		case domain.ErrEmptyParameters:
@@ -51,13 +51,13 @@ func (h *Handler) SignUp(_ context.Context, request *proto.SignUpRequest) (*prot
 	return &proto.Response{AccessToken: token}, nil
 }
 
-func (h *Handler) SignIn(_ context.Context, request *proto.SignInRequest) (*proto.Response, error) {
+func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*proto.Response, error) {
 	var user = domain.User{
 		Email:    request.GetEmail(),
 		Password: request.GetPassword(),
 	}
 
-	token, err := h.usersService.SignIn(user)
+	token, err := h.usersService.SignIn(ctx, user)
 	if err != nil {
 		switch err {
 		case domain.ErrEmptyParameters:
@@ -86,8 +86,8 @@ func (h *Handler) Authenticate(_ context.Context, request *proto.AuthRequest) (*
 	return &proto.AuthResponse{UserId: userId}, nil
 }
 
-func (h *Handler) UserExists(_ context.Context, request *proto.UserExistsRequest) (*proto.UserExistsResponse, error) {
-	exists, err := h.usersService.UserExists(request.GetUserId())
+func (h *Handler) UserExists(ctx context.Context, request *proto.UserExistsRequest) (*proto.UserExistsResponse, error) {
+	exists, err := h.usersService.UserExists(ctx, request.GetUserId())
 	if err != nil {
 		switch err {
 		case domain.ErrEmptyParameters:

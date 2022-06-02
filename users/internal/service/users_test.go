@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"github.com/KirillMironov/rapu/users/internal/domain"
 	"github.com/KirillMironov/rapu/users/test/mock"
 	"github.com/stretchr/testify/assert"
@@ -39,7 +40,7 @@ func TestUsersService_SignUp(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		token, err := usersService.SignUp(domain.User{
+		token, err := usersService.SignUp(context.Background(), domain.User{
 			Username: tc.username,
 			Email:    tc.email,
 			Password: tc.password,
@@ -72,7 +73,7 @@ func TestUsersService_SignIn(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		token, err := usersService.SignIn(domain.User{
+		token, err := usersService.SignIn(context.Background(), domain.User{
 			Email:    tc.email,
 			Password: tc.password,
 		})
@@ -127,7 +128,7 @@ func TestUsersService_UserExists(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 
-		exists, err := usersService.UserExists(tc.userId)
+		exists, err := usersService.UserExists(context.Background(), tc.userId)
 		assert.Equal(t, tc.expectedError, err)
 		assert.Equal(t, tc.expectedExistence, exists)
 	}

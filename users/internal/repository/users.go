@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"github.com/KirillMironov/rapu/users/internal/domain"
@@ -17,7 +18,7 @@ func NewUsers(db *sqlx.DB) *Users {
 	return &Users{db: db}
 }
 
-func (u *Users) Create(user domain.User) (string, error) {
+func (u *Users) Create(ctx context.Context, user domain.User) (string, error) {
 	var sqlStr = "INSERT INTO users (username, email, password, created_at) VALUES ($1, $2, $3, $4) RETURNING id"
 	var userId string
 
@@ -26,7 +27,7 @@ func (u *Users) Create(user domain.User) (string, error) {
 		return "", err
 	}
 
-	err = tx.QueryRowx(sqlStr, user.Username, user.Email, user.Password, time.Now()).Scan(&userId)
+	err = tx.QueryRowxContext(ctx, sqlStr, user.Username, user.Email, user.Password, time.Now()).Scan(&userId)
 	if err != nil {
 		_ = tx.Rollback()
 		if e, ok := err.(*pq.Error); ok && e.Code == "23505" {
@@ -38,11 +39,11 @@ func (u *Users) Create(user domain.User) (string, error) {
 	return userId, tx.Commit()
 }
 
-func (u *Users) GetByEmail(email string) (domain.User, error) {
+func (u *Users) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	var sqlStr = "SELECT id, password FROM users WHERE email = $1"
 	var user domain.User
 
-	err := u.db.QueryRowx(sqlStr, email).Scan(&user.Id, &user.Password)
+	err := u.db.QueryRowxContext(ctx, sqlStr, email).Scan(&user.Id, &user.Password)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return domain.User{}, domain.ErrUserNotFound
@@ -53,10 +54,10 @@ func (u *Users) GetByEmail(email string) (domain.User, error) {
 	return user, nil
 }
 
-func (u *Users) CheckExistence(userId string) (bool, error) {
+func (u *Users) CheckExistence(ctx context.Context, userId string) (bool, error) {
 	var sqlStr = "SELECT FROM users WHERE id = $1"
 
-	err := u.db.QueryRowx(sqlStr, userId).Scan()
+	err := u.db.QueryRowxContext(ctx, sqlStr, userId).Scan()
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, domain.ErrUserNotFound
