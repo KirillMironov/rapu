@@ -11,6 +11,7 @@ import (
 	"github.com/KirillMironov/rapu/users/internal/service"
 	"github.com/KirillMironov/rapu/users/test/mock"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -25,25 +26,40 @@ import (
 )
 
 const (
-	postgresImage      = "postgres:12.7-alpine3.14"
-	postgresSchemaPath = "../../config/schema.sql"
-	jwtKey             = "secretKey"
-	tokenTTL           = time.Minute
+	postgresImage       = "postgres:12.7-alpine3.14"
+	postgresPort        = "5432"
+	postgresPasswordEnv = "POSTGRES_PASSWORD"
+	postgresPassword    = "postgres"
+	postgresSchemaPath  = "../../config/schema.sql"
+	jwtKey              = "secretKey"
+	tokenTTL            = time.Minute
 )
 
 func newClient(t *testing.T) proto.UsersClient {
-	db := postgresSetup(t)
-	handler := handlerSetup(t, db)
+	t.Helper()
 
-	var listener = bufconn.Listen(1024 * 1024)
+	var (
+		db       = newPostgres(t)
+		handler  = newHandler(t, db)
+		listener = bufconn.Listen(1024 * 1024)
+		ctx      = context.Background()
+	)
+
 	go func() {
-		log.Fatal(handler.Serve(listener))
+		err := handler.Serve(listener)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithTransportCredentials(insecure.NewCredentials()),
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 			return listener.Dial()
-		}))
+		}),
+	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -53,35 +69,44 @@ func newClient(t *testing.T) proto.UsersClient {
 	return proto.NewUsersClient(conn)
 }
 
-func handlerSetup(t *testing.T, db *sqlx.DB) *grpc.Server {
-	manager, err := service.NewJWTManager(jwtKey, tokenTTL)
+func newHandler(t *testing.T, db *sqlx.DB) *grpc.Server {
+	t.Helper()
+
+	jwtService, err := service.NewJWTManager(jwtKey, tokenTTL)
 	require.NoError(t, err)
 	usersRepository := repository.NewUsers(db)
-	usersService := service.NewUsers(usersRepository, manager, mock.Logger{})
+	usersService := service.NewUsers(usersRepository, jwtService, mock.Logger{})
+
 	return delivery.NewHandler(usersService)
 }
 
-func postgresSetup(t *testing.T) *sqlx.DB {
-	request := testcontainers.ContainerRequest{
+func newPostgres(t *testing.T) *sqlx.DB {
+	t.Helper()
+
+	var ctx = context.Background()
+
+	containerRequest := testcontainers.ContainerRequest{
 		Image:        postgresImage,
-		ExposedPorts: []string{"5432"},
-		Env:          map[string]string{"POSTGRES_PASSWORD": "postgres"},
+		ExposedPorts: []string{postgresPort},
+		Env:          map[string]string{postgresPasswordEnv: postgresPassword},
 		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2),
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: request,
+		ContainerRequest: containerRequest,
 		Started:          true,
 	})
 	require.NoError(t, err)
 
 	host, err := container.Host(ctx)
 	require.NoError(t, err)
-	mappedPort, err := container.MappedPort(ctx, "5432")
+	mappedPort, err := container.MappedPort(ctx, postgresPort)
 	require.NoError(t, err)
 
-	conn := fmt.Sprintf("postgres://postgres:postgres@%s:%s/postgres?sslmode=disable", host, mappedPort.Port())
-	db, err := sqlx.Connect("postgres", conn)
+	connectionString := fmt.Sprintf("postgres://postgres:%s@%s:%s/postgres?sslmode=disable",
+		postgresPassword, host, mappedPort.Port())
+
+	db, err := sqlx.Connect("postgres", connectionString)
 	require.NoError(t, err)
 
 	query, err := ioutil.ReadFile(postgresSchemaPath)
@@ -91,7 +116,7 @@ func postgresSetup(t *testing.T) *sqlx.DB {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		container.Terminate(context.Background())
+		container.Terminate(ctx)
 	})
 
 	return db

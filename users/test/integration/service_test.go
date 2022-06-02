@@ -17,10 +17,11 @@ const (
 	testPassword = "qwerty"
 )
 
-var ctx = context.Background()
-
 func Test_SignUp(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
 	resp, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
 		Username: testUsername,
@@ -52,7 +53,10 @@ func Test_SignUp(t *testing.T) {
 }
 
 func Test_SignIn(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
 	resp, err := client.SignIn(ctx, &proto.SignInRequest{ // user doesn't exist
 		Email:    testEmail,
@@ -105,7 +109,10 @@ func Test_SignIn(t *testing.T) {
 }
 
 func Test_Authenticate(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
 	resp, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
 		Username: testUsername,
@@ -135,7 +142,10 @@ func Test_Authenticate(t *testing.T) {
 }
 
 func Test_UserExists(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
 	resp, _ := client.SignUp(ctx, &proto.SignUpRequest{ // create user
 		Username: testUsername,
