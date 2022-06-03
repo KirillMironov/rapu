@@ -2,8 +2,8 @@ package delivery
 
 import (
 	"context"
-	"github.com/KirillMironov/rapu/messenger/domain"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
+	"github.com/KirillMironov/rapu/messenger/internal/domain"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"google.golang.org/grpc/codes"
@@ -18,9 +18,13 @@ var upgrader = websocket.Upgrader{
 }
 
 type Handler struct {
-	usersClient proto.UsersClient
-	service     domain.ClientsService
-	logger      Logger
+	usersClient    proto.UsersClient
+	clientsService ClientsService
+	logger         Logger
+}
+
+type ClientsService interface {
+	Connect(domain.Client)
 }
 
 type Logger interface {
@@ -28,11 +32,11 @@ type Logger interface {
 	Error(args ...interface{})
 }
 
-func NewHandler(usersClient proto.UsersClient, service domain.ClientsService, logger Logger) *Handler {
+func NewHandler(usersClient proto.UsersClient, clientsService ClientsService, logger Logger) *Handler {
 	return &Handler{
-		usersClient: usersClient,
-		service:     service,
-		logger:      logger,
+		usersClient:    usersClient,
+		clientsService: clientsService,
+		logger:         logger,
 	}
 }
 
@@ -43,7 +47,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 
 	v1 := router.Group("/api/v1")
 	{
-		messenger := v1.Group("messenger")
+		messenger := v1.Group("/messenger")
 		{
 			messenger.GET("/connect", h.connect)
 		}
@@ -98,7 +102,7 @@ func (h *Handler) connect(c *gin.Context) {
 	}
 
 	resp, err := h.usersClient.UserExists(context.Background(), &proto.UserExistsRequest{UserId: form.ToUserId})
-	if err != nil || resp.GetExists() == false {
+	if err != nil || !resp.GetExists() {
 		st, ok := status.FromError(err)
 		if !ok {
 			_ = conn.WriteMessage(websocket.CloseInternalServerErr, nil)
@@ -126,5 +130,5 @@ func (h *Handler) connect(c *gin.Context) {
 		Conn:     conn,
 	}
 
-	h.service.Connect(client)
+	h.clientsService.Connect(client)
 }
