@@ -1,16 +1,21 @@
 package service
 
-import "github.com/KirillMironov/rapu/messenger/domain"
+import "github.com/KirillMironov/rapu/messenger/internal/domain"
 
-type ClientsService struct {
-	messagesService domain.MessagesService
+type Clients struct {
+	messagesService MessagesService
 }
 
-func NewClientsService(messagesService domain.MessagesService) *ClientsService {
-	return &ClientsService{messagesService}
+type MessagesService interface {
+	Reader(client domain.Client, done chan<- struct{})
+	Writer(client domain.Client, done <-chan struct{})
 }
 
-func (c *ClientsService) Connect(client domain.Client) {
+func NewClients(messagesService MessagesService) *Clients {
+	return &Clients{messagesService}
+}
+
+func (c *Clients) Connect(client domain.Client) {
 	done := make(chan struct{})
 	go c.messagesService.Writer(client, done)
 	go c.messagesService.Reader(client, done)

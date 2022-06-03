@@ -7,7 +7,3 @@ type Client struct {
 	ToUserId string
 	Conn     *websocket.Conn
 }
-
-type ClientsService interface {
-	Connect(Client)
-}

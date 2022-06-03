@@ -1,16 +1,21 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"github.com/KirillMironov/rapu/messenger/config"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
-	repo "github.com/KirillMironov/rapu/messenger/internal/repository/redis"
+	"github.com/KirillMironov/rapu/messenger/internal/repository"
 	"github.com/KirillMironov/rapu/messenger/internal/service"
 	"github.com/go-redis/redis"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 )
 
 func main() {
@@ -51,12 +56,37 @@ func main() {
 	usersClient := proto.NewUsersClient(usersConn)
 
 	// App
-	bus := repo.NewMessagesBus(client)
-	repository := repo.NewMessagesRepository(client)
-	messagesService := service.NewMessagesService(bus, repository, logger)
-	clientsService := service.NewClientsService(messagesService)
+	messagesBus := repository.NewMessagesBus(client)
+	messagesRepository := repository.NewMessages(client)
+	messagesService := service.NewMessages(messagesBus, messagesRepository, logger)
+	clientsService := service.NewClients(messagesService)
 	handler := delivery.NewHandler(usersClient, clientsService, logger)
 
+	// Gin
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: handler.InitRoutes(),
+	}
+
+	go func() {
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Fatal(err)
+		}
+	}()
+
 	logger.Infof("messenger started on port %s", cfg.Port)
-	logger.Fatal(http.ListenAndServe(":"+cfg.Port, handler.InitRoutes()))
+
+	// Graceful Shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+
+	<-quit
+	logger.Info("shutting down http server")
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Fatal(err)
+	}
 }

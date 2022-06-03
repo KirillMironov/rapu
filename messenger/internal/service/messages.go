@@ -2,25 +2,40 @@ package service
 
 import (
 	"encoding/json"
-	"github.com/KirillMironov/rapu/messenger/domain"
+	"github.com/KirillMironov/rapu/messenger/internal/domain"
+	"github.com/go-redis/redis"
 	"github.com/gorilla/websocket"
 )
 
-type MessagesService struct {
-	bus        domain.MessagesBus
-	repository domain.MessagesRepository
-	logger     Logger
+type Messages struct {
+	messagesBus        MessagesBus
+	messagesRepository MessagesRepository
+	logger             Logger
+}
+
+type MessagesBus interface {
+	Publish(message domain.Message, roomId string) error
+	Subscribe(roomId string) *redis.PubSub
+}
+
+type MessagesRepository interface {
+	Save(message domain.Message, roomId string) error
+	Get(roomId string) ([]domain.Message, error)
 }
 
 type Logger interface {
 	Error(args ...interface{})
 }
 
-func NewMessagesService(bus domain.MessagesBus, repository domain.MessagesRepository, logger Logger) *MessagesService {
-	return &MessagesService{bus, repository, logger}
+func NewMessages(messagesBus MessagesBus, messagesRepository MessagesRepository, logger Logger) *Messages {
+	return &Messages{
+		messagesBus:        messagesBus,
+		messagesRepository: messagesRepository,
+		logger:             logger,
+	}
 }
 
-func (m *MessagesService) Reader(client domain.Client, done chan<- struct{}) {
+func (m *Messages) Reader(client domain.Client, done chan<- struct{}) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
 	defer close(done)
 
@@ -39,13 +54,13 @@ func (m *MessagesService) Reader(client domain.Client, done chan<- struct{}) {
 			Text: string(p),
 		}
 
-		err = m.bus.Publish(message, roomId)
+		err = m.messagesBus.Publish(message, roomId)
 		if err != nil {
 			m.logger.Error(err)
 			return
 		}
 
-		err = m.repository.Save(message, roomId)
+		err = m.messagesRepository.Save(message, roomId)
 		if err != nil {
 			m.logger.Error(err)
 			return
@@ -53,7 +68,7 @@ func (m *MessagesService) Reader(client domain.Client, done chan<- struct{}) {
 	}
 }
 
-func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
+func (m *Messages) Writer(client domain.Client, done <-chan struct{}) {
 	roomId := m.getRoomId(client.UserId, client.ToUserId)
 	defer client.Conn.Close()
 
@@ -68,7 +83,7 @@ func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 		return
 	}
 
-	sub := m.bus.Subscribe(roomId)
+	sub := m.messagesBus.Subscribe(roomId)
 	defer sub.Close()
 
 	for {
@@ -85,8 +100,8 @@ func (m *MessagesService) Writer(client domain.Client, done <-chan struct{}) {
 	}
 }
 
-func (m *MessagesService) loadChatHistory(roomId string) ([]byte, error) {
-	messages, err := m.repository.Get(roomId)
+func (m *Messages) loadChatHistory(roomId string) ([]byte, error) {
+	messages, err := m.messagesRepository.Get(roomId)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +109,7 @@ func (m *MessagesService) loadChatHistory(roomId string) ([]byte, error) {
 	return json.Marshal(messages)
 }
 
-func (m *MessagesService) getRoomId(from, to string) string {
+func (m *Messages) getRoomId(from, to string) string {
 	if to < from {
 		return to + ":" + from
 	}
