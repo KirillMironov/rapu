@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 import (
 	"context"
@@ -6,24 +6,24 @@ import (
 	"google.golang.org/grpc"
 )
 
-type UsersClientMock struct{}
+type UsersClient struct{}
 
-func (UsersClientMock) SignUp(context.Context, *proto.SignUpRequest,
+func (UsersClient) SignUp(context.Context, *proto.SignUpRequest,
 	...grpc.CallOption) (*proto.Response, error) {
 	return nil, nil
 }
 
-func (UsersClientMock) SignIn(context.Context, *proto.SignInRequest,
+func (UsersClient) SignIn(context.Context, *proto.SignInRequest,
 	...grpc.CallOption) (*proto.Response, error) {
 	return nil, nil
 }
 
-func (UsersClientMock) Authenticate(context.Context, *proto.AuthRequest,
+func (UsersClient) Authenticate(context.Context, *proto.AuthRequest,
 	...grpc.CallOption) (*proto.AuthResponse, error) {
 	return &proto.AuthResponse{UserId: "1"}, nil
 }
 
-func (UsersClientMock) UserExists(context.Context, *proto.UserExistsRequest,
+func (UsersClient) UserExists(context.Context, *proto.UserExistsRequest,
 	...grpc.CallOption) (*proto.UserExistsResponse, error) {
 	return &proto.UserExistsResponse{Exists: true}, nil
 }

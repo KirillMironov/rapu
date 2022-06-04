@@ -12,13 +12,12 @@ type Handler struct {
 }
 
 type Logger interface {
-	Info(args ...interface{})
 	Error(args ...interface{})
 }
 
-func NewHandler(client proto.UsersClient, postsClient proto.PostsClient, logger Logger) *Handler {
+func NewHandler(usersClient proto.UsersClient, postsClient proto.PostsClient, logger Logger) *Handler {
 	return &Handler{
-		usersClient: client,
+		usersClient: usersClient,
 		postsClient: postsClient,
 		logger:      logger,
 	}
@@ -36,7 +35,6 @@ func (h *Handler) InitRoutes() *gin.Engine {
 			users.POST("/sign-up", h.signUp)
 			users.POST("/sign-in", h.signIn)
 		}
-
 		posts := v1.Group("/posts")
 		{
 			posts.GET("/:userId", h.getPostsByUserId)
