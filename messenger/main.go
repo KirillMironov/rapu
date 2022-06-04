@@ -59,8 +59,8 @@ func main() {
 	messagesBus := repository.NewMessagesBus(client)
 	messagesRepository := repository.NewMessages(client)
 	messagesService := service.NewMessages(messagesBus, messagesRepository, logger)
-	clientsService := service.NewClients(messagesService)
-	handler := delivery.NewHandler(usersClient, clientsService, logger)
+	clientsService := service.NewClients(usersClient, messagesService, logger)
+	handler := delivery.NewHandler(clientsService, logger)
 
 	// Gin
 	srv := &http.Server{
