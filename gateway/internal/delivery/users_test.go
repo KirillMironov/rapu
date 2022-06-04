@@ -3,7 +3,7 @@ package delivery
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/KirillMironov/rapu/gateway/test/mocks"
+	"github.com/KirillMironov/rapu/gateway/test/mock"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +17,7 @@ const (
 )
 
 var (
-	handler = NewHandler(mocks.UsersClientMock{}, mocks.PostsClientMock{}, mocks.LoggerMock{})
+	handler = NewHandler(mock.UsersClient{}, mock.PostsClient{}, mock.Logger{})
 	router  = handler.InitRoutes()
 )
 
@@ -25,54 +25,73 @@ func TestHandler_signUp(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		form               signUpForm
+		username           string
+		email              string
+		password           string
 		expectedStatusCode int
 	}{
-		{signUpForm{
-			Username: testUsername,
-			Email:    testEmail,
-			Password: testPassword,
-		}, http.StatusCreated},
-		{signUpForm{
-			Username: "",
-			Email:    testEmail,
-			Password: testPassword,
-		}, http.StatusBadRequest},
-		{signUpForm{
-			Username: testUsername,
-			Email:    "",
-			Password: testPassword,
-		}, http.StatusBadRequest},
-		{signUpForm{
-			Username: testUsername,
-			Email:    testEmail,
-			Password: "",
-		}, http.StatusBadRequest},
-		{signUpForm{
-			Username: "",
-			Email:    "",
-			Password: testPassword,
-		}, http.StatusBadRequest},
-		{signUpForm{
-			Username: "",
-			Email:    testEmail,
-			Password: "",
-		}, http.StatusBadRequest},
-		{signUpForm{
-			Username: testUsername,
-			Email:    "",
-			Password: "",
-		}, http.StatusBadRequest},
-		{signUpForm{
-			Username: "",
-			Email:    "",
-			Password: "",
-		}, http.StatusBadRequest},
+		{
+			username:           testUsername,
+			email:              testEmail,
+			password:           testPassword,
+			expectedStatusCode: http.StatusCreated,
+		},
+		{
+			username:           "",
+			email:              testEmail,
+			password:           testPassword,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			username:           testUsername,
+			email:              "",
+			password:           testPassword,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			username:           testUsername,
+			email:              testEmail,
+			password:           "",
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			username:           "",
+			email:              "",
+			password:           testPassword,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			username:           "",
+			email:              testEmail,
+			password:           "",
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			username:           testUsername,
+			email:              "",
+			password:           "",
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			username:           "",
+			email:              "",
+			password:           "",
+			expectedStatusCode: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.form)
+
+		body, err := json.Marshal(struct {
+			Username string `json:"username"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}{
+			Username: tc.username,
+			Email:    tc.email,
+			Password: tc.password,
+		})
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
@@ -88,18 +107,42 @@ func TestHandler_signIn(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		form               signInForm
+		email              string
+		password           string
 		expectedStatusCode int
 	}{
-		{signInForm{Email: testEmail, Password: testPassword}, http.StatusOK},
-		{signInForm{Email: "", Password: testPassword}, http.StatusBadRequest},
-		{signInForm{Email: testEmail, Password: ""}, http.StatusBadRequest},
-		{signInForm{Email: "", Password: ""}, http.StatusBadRequest},
+		{
+			email:              testEmail,
+			password:           testPassword,
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			email:              "",
+			password:           testPassword,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			email:              testEmail,
+			password:           "",
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			email:              "",
+			password:           "",
+			expectedStatusCode: http.StatusBadRequest,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.form)
+
+		body, err := json.Marshal(struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}{
+			Email:    tc.email,
+			Password: tc.password,
+		})
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()

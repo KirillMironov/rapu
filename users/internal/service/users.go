@@ -1,80 +1,127 @@
 package service
 
 import (
+	"context"
 	"errors"
-	"github.com/KirillMironov/rapu/users/domain"
+	"github.com/KirillMironov/rapu/users/internal/domain"
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UsersService struct {
-	repository   domain.UsersRepository
-	tokenManager TokenManager
+type Users struct {
+	usersRepository UsersRepository
+	jwtService      JWTService
+	logger          Logger
 }
 
-type TokenManager interface {
-	Generate(userId string) (string, error)
-	Verify(token string) (string, error)
+type UsersRepository interface {
+	Create(context.Context, domain.User) (userId string, err error)
+	GetByEmail(ctx context.Context, email string) (domain.User, error)
+	CheckExistence(ctx context.Context, userId string) (bool, error)
 }
 
-func NewUsersService(repository domain.UsersRepository, tokenManager TokenManager) *UsersService {
-	return &UsersService{
-		repository:   repository,
-		tokenManager: tokenManager,
+type JWTService interface {
+	Generate(userId string) (token string, err error)
+	Verify(token string) (userId string, err error)
+}
+
+type Logger interface {
+	Error(args ...interface{})
+}
+
+func NewUsers(usersRepository UsersRepository, jwtService JWTService, logger Logger) *Users {
+	return &Users{
+		usersRepository: usersRepository,
+		jwtService:      jwtService,
+		logger:          logger,
 	}
 }
 
-func (u *UsersService) SignUp(user domain.User) (string, error) {
+func (u *Users) SignUp(ctx context.Context, user domain.User) (string, error) {
 	if user.Username == "" || user.Email == "" || user.Password == "" {
 		return "", domain.ErrEmptyParameters
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
+		u.logger.Error(err)
 		return "", err
 	}
 	user.Password = string(hash)
 
-	userId, err := u.repository.Create(user)
+	userId, err := u.usersRepository.Create(ctx, user)
 	if err != nil {
+		if !errors.Is(err, domain.ErrUserAlreadyExists) {
+			u.logger.Error(err)
+		}
 		return "", err
 	}
 
-	return u.tokenManager.Generate(userId)
+	token, err := u.jwtService.Generate(userId)
+	if err != nil {
+		u.logger.Error(err)
+		return "", err
+	}
+
+	return token, nil
 }
 
-func (u *UsersService) SignIn(input domain.User) (string, error) {
+func (u *Users) SignIn(ctx context.Context, input domain.User) (string, error) {
 	if input.Email == "" || input.Password == "" {
 		return "", domain.ErrEmptyParameters
 	}
 
-	user, err := u.repository.GetByEmail(input.Email)
+	user, err := u.usersRepository.GetByEmail(ctx, input.Email)
 	if err != nil {
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			u.logger.Error(err)
+		}
 		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return "", domain.ErrWrongPassword
+			return "", domain.ErrInvalidCredentials
 		}
+		u.logger.Error(err)
 		return "", err
 	}
 
-	return u.tokenManager.Generate(user.Id)
+	token, err := u.jwtService.Generate(user.Id)
+	if err != nil {
+		u.logger.Error(err)
+		return "", err
+	}
+
+	return token, nil
 }
 
-func (u *UsersService) Authenticate(token string) (string, error) {
+func (u *Users) Authenticate(token string) (string, error) {
 	if token == "" {
 		return "", domain.ErrEmptyParameters
 	}
 
-	return u.tokenManager.Verify(token)
+	userId, err := u.jwtService.Verify(token)
+	if err != nil {
+		u.logger.Error(err)
+		return "", err
+	}
+
+	return userId, nil
 }
 
-func (u *UsersService) UserExists(userId string) (bool, error) {
+func (u *Users) UserExists(ctx context.Context, userId string) (bool, error) {
 	if userId == "" {
 		return false, domain.ErrEmptyParameters
 	}
 
-	return u.repository.CheckExistence(userId)
+	exists, err := u.usersRepository.CheckExistence(ctx, userId)
+	if err != nil {
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			u.logger.Error(err)
+		}
+		return false, err
+	}
+
+	return exists, nil
 }

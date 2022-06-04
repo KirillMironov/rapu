@@ -2,7 +2,7 @@
 .PHONY: test
 
 build:
-	CGO_ENABLED=0 go build -o ./gateway ./cmd/gateway.go
+	CGO_ENABLED=0 go build .
 
 test:
 	go test -count=1 ./...
@@ -13,4 +13,4 @@ proto:
 	go mod tidy
 
 lint:
-	golangci-lint run --exclude logger.Sync
+	golangci-lint run
