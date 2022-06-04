@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"context"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
@@ -9,35 +8,33 @@ import (
 	"net/http"
 )
 
-type createPostForm struct {
-	Message string `json:"message" binding:"required"`
-}
-
 func (h *Handler) createPost(c *gin.Context) {
-	var form createPostForm
+	var form struct {
+		Message string `json:"message" binding:"required"`
+	}
 
 	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		h.logger.Info(err)
 		return
 	}
 
-	_, err = h.postsClient.Create(context.Background(), &proto.CreateRequest{
+	_, err = h.postsClient.Create(c, &proto.CreateRequest{
 		UserId:  c.GetString(userIdKey),
 		Message: form.Message,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
-			c.Status(http.StatusInternalServerError)
 			h.logger.Error(err)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
 		switch st.Code() {
 		case codes.InvalidArgument:
 			c.Status(http.StatusBadRequest)
 		default:
+			h.logger.Error(err)
 			c.Status(http.StatusInternalServerError)
 		}
 		return
@@ -46,22 +43,19 @@ func (h *Handler) createPost(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-type getPostsByUserIdForm struct {
-	Offset string `form:"offset"`
-	Limit  int64  `form:"limit"`
-}
-
 func (h *Handler) getPostsByUserId(c *gin.Context) {
-	var form getPostsByUserIdForm
+	var form struct {
+		Offset string `form:"offset"`
+		Limit  int64  `form:"limit"`
+	}
 
 	err := c.Bind(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		h.logger.Info(err)
 		return
 	}
 
-	resp, err := h.postsClient.GetByUserId(context.Background(), &proto.GetByUserIdRequest{
+	resp, err := h.postsClient.GetByUserId(c, &proto.GetByUserIdRequest{
 		UserId: c.Param("userId"),
 		Offset: form.Offset,
 		Limit:  form.Limit,
@@ -69,8 +63,8 @@ func (h *Handler) getPostsByUserId(c *gin.Context) {
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
-			c.Status(http.StatusInternalServerError)
 			h.logger.Error(err)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
 		switch st.Code() {
@@ -79,10 +73,11 @@ func (h *Handler) getPostsByUserId(c *gin.Context) {
 		case codes.NotFound:
 			c.Status(http.StatusNotFound)
 		default:
+			h.logger.Error(err)
 			c.Status(http.StatusInternalServerError)
 		}
 		return
 	}
 
-	c.String(http.StatusOK, string(resp.GetPosts()))
+	c.JSON(http.StatusOK, resp.GetPosts())
 }

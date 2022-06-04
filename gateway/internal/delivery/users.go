@@ -1,7 +1,6 @@
 package delivery
 
 import (
-	"context"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc/codes"
@@ -11,23 +10,20 @@ import (
 
 const accessTokenKey = "access_token"
 
-type signUpForm struct {
-	Username string `json:"username" binding:"required"`
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 func (h *Handler) signUp(c *gin.Context) {
-	var form signUpForm
+	var form struct {
+		Username string `json:"username" binding:"required"`
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
 
 	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		h.logger.Info(err)
 		return
 	}
 
-	resp, err := h.usersClient.SignUp(context.Background(), &proto.SignUpRequest{
+	resp, err := h.usersClient.SignUp(c, &proto.SignUpRequest{
 		Username: form.Username,
 		Email:    form.Email,
 		Password: form.Password,
@@ -35,8 +31,8 @@ func (h *Handler) signUp(c *gin.Context) {
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
-			c.Status(http.StatusInternalServerError)
 			h.logger.Error(err)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
 		switch st.Code() {
@@ -45,6 +41,7 @@ func (h *Handler) signUp(c *gin.Context) {
 		case codes.AlreadyExists:
 			c.Status(http.StatusConflict)
 		default:
+			h.logger.Error(err)
 			c.Status(http.StatusInternalServerError)
 		}
 		return
@@ -53,30 +50,27 @@ func (h *Handler) signUp(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{accessTokenKey: resp.GetAccessToken()})
 }
 
-type signInForm struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
 func (h *Handler) signIn(c *gin.Context) {
-	var form signInForm
+	var form struct {
+		Email    string `json:"email" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}
 
 	err := c.BindJSON(&form)
 	if err != nil {
 		c.Status(http.StatusBadRequest)
-		h.logger.Info(err)
 		return
 	}
 
-	resp, err := h.usersClient.SignIn(context.Background(), &proto.SignInRequest{
+	resp, err := h.usersClient.SignIn(c, &proto.SignInRequest{
 		Email:    form.Email,
 		Password: form.Password,
 	})
 	if err != nil {
 		st, ok := status.FromError(err)
 		if !ok {
-			c.Status(http.StatusInternalServerError)
 			h.logger.Error(err)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
 		switch st.Code() {
@@ -85,6 +79,7 @@ func (h *Handler) signIn(c *gin.Context) {
 		case codes.Unauthenticated:
 			c.Status(http.StatusUnauthorized)
 		default:
+			h.logger.Error(err)
 			c.Status(http.StatusInternalServerError)
 		}
 		return

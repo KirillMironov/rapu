@@ -1,4 +1,4 @@
-package mocks
+package mock
 
 import (
 	"context"
@@ -6,14 +6,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-type PostsClientMock struct{}
+type PostsClient struct{}
 
-func (PostsClientMock) Create(context.Context, *proto.CreateRequest,
+func (PostsClient) Create(context.Context, *proto.CreateRequest,
 	...grpc.CallOption) (*proto.CreateResponse, error) {
 	return nil, nil
 }
 
-func (PostsClientMock) GetByUserId(context.Context, *proto.GetByUserIdRequest,
+func (PostsClient) GetByUserId(context.Context, *proto.GetByUserIdRequest,
 	...grpc.CallOption) (*proto.GetByUserIdResponse, error) {
 	return nil, nil
 }
