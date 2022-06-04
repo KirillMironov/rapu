@@ -17,147 +17,261 @@ const (
 	testPassword = "qwerty"
 )
 
-var ctx = context.Background()
-
 func Test_SignUp(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
-	resp, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
-		Username: testUsername,
-		Email:    testEmail,
-		Password: testPassword,
-	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.GetAccessToken())
+	testCases := []struct {
+		name               string
+		username           string
+		email              string
+		password           string
+		expectAccessToken  bool
+		expectError        bool
+		expectedStatusCode codes.Code
+	}{
+		{
+			name:               "create user",
+			username:           testUsername,
+			email:              testEmail,
+			password:           testPassword,
+			expectAccessToken:  true,
+			expectError:        false,
+			expectedStatusCode: codes.OK,
+		},
+		{
+			name:               "empty credentials",
+			username:           "",
+			email:              "",
+			password:           "",
+			expectAccessToken:  false,
+			expectError:        true,
+			expectedStatusCode: codes.InvalidArgument,
+		},
+		{
+			name:               "user already exists",
+			username:           testUsername,
+			email:              testEmail,
+			password:           testPassword,
+			expectAccessToken:  false,
+			expectError:        true,
+			expectedStatusCode: codes.AlreadyExists,
+		},
+	}
 
-	resp, err = client.SignUp(ctx, &proto.SignUpRequest{ // empty credentials
-		Username: "",
-		Email:    "",
-		Password: "",
-	})
-	assert.Error(t, err)
-	assert.Empty(t, resp.GetAccessToken())
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.InvalidArgument, st.Code())
-
-	resp, err = client.SignUp(ctx, &proto.SignUpRequest{ // user already exists
-		Username: testUsername,
-		Email:    testEmail,
-		Password: testPassword,
-	})
-	assert.Error(t, err)
-	assert.Empty(t, resp.GetAccessToken())
-	st, _ = status.FromError(err)
-	assert.Equal(t, codes.AlreadyExists, st.Code())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := client.SignUp(ctx, &proto.SignUpRequest{
+				Username: tc.username,
+				Email:    tc.email,
+				Password: tc.password,
+			})
+			assert.Equal(t, tc.expectError, err != nil)
+			assert.Equal(t, tc.expectAccessToken, resp.GetAccessToken() != "")
+			st, _ := status.FromError(err)
+			assert.Equal(t, tc.expectedStatusCode, st.Code())
+		})
+	}
 }
 
 func Test_SignIn(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
-	resp, err := client.SignIn(ctx, &proto.SignInRequest{ // user doesn't exist
-		Email:    testEmail,
-		Password: testPassword,
-	})
-	assert.Error(t, err)
-	assert.Empty(t, resp.GetAccessToken())
+	testCases := []struct {
+		name               string
+		email              string
+		password           string
+		expectAccessToken  bool
+		expectError        bool
+		expectedStatusCode codes.Code
+		preparation        func(client proto.UsersClient) error
+	}{
+		{
+			name:               "user doesn't exist",
+			email:              testEmail,
+			password:           testPassword,
+			expectAccessToken:  false,
+			expectError:        true,
+			expectedStatusCode: codes.Unauthenticated,
+		},
+		{
+			name:               "sign in",
+			email:              testEmail,
+			password:           testPassword,
+			expectAccessToken:  true,
+			expectError:        false,
+			expectedStatusCode: codes.OK,
+			preparation: func(client proto.UsersClient) error {
+				_, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
+					Username: testUsername,
+					Email:    testEmail,
+					Password: testPassword,
+				})
+				return err
+			},
+		},
+		{
+			name:               "empty credentials",
+			email:              "",
+			password:           "",
+			expectAccessToken:  false,
+			expectError:        true,
+			expectedStatusCode: codes.InvalidArgument,
+		},
+		{
+			name:               "invalid credentials",
+			email:              "q",
+			password:           "q",
+			expectAccessToken:  false,
+			expectError:        true,
+			expectedStatusCode: codes.Unauthenticated,
+		},
+		{
+			name:               "invalid password",
+			email:              testEmail,
+			password:           "q",
+			expectAccessToken:  false,
+			expectError:        true,
+			expectedStatusCode: codes.Unauthenticated,
+		},
+	}
 
-	resp, err = client.SignUp(ctx, &proto.SignUpRequest{ // create user
-		Username: testUsername,
-		Email:    testEmail,
-		Password: testPassword,
-	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.GetAccessToken())
-
-	resp, err = client.SignIn(ctx, &proto.SignInRequest{ // sign in
-		Email:    testEmail,
-		Password: testPassword,
-	})
-	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.GetAccessToken())
-
-	resp, err = client.SignIn(ctx, &proto.SignInRequest{ // empty credentials
-		Email:    "",
-		Password: "",
-	})
-	assert.Error(t, err)
-	assert.Empty(t, resp.GetAccessToken())
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.InvalidArgument, st.Code())
-
-	resp, err = client.SignIn(ctx, &proto.SignInRequest{ // invalid credentials
-		Email:    "wrong email",
-		Password: "wrong password",
-	})
-	assert.Error(t, err)
-	assert.Empty(t, resp.GetAccessToken())
-	st, _ = status.FromError(err)
-	assert.Equal(t, codes.Unauthenticated, st.Code())
-
-	resp, err = client.SignIn(ctx, &proto.SignInRequest{ // wrong password
-		Email:    testEmail,
-		Password: "wrong password",
-	})
-	assert.Error(t, err)
-	assert.Empty(t, resp.GetAccessToken())
-	st, _ = status.FromError(err)
-	assert.Equal(t, codes.Unauthenticated, st.Code())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.preparation != nil {
+				assert.NoError(t, tc.preparation(client))
+			}
+			resp, err := client.SignIn(ctx, &proto.SignInRequest{
+				Email:    tc.email,
+				Password: tc.password,
+			})
+			assert.Equal(t, tc.expectError, err != nil)
+			assert.Equal(t, tc.expectAccessToken, resp.GetAccessToken() != "")
+			st, _ := status.FromError(err)
+			assert.Equal(t, tc.expectedStatusCode, st.Code())
+		})
+	}
 }
 
 func Test_Authenticate(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
-	resp, err := client.SignUp(ctx, &proto.SignUpRequest{ // create user
+	resp, err := client.SignUp(ctx, &proto.SignUpRequest{
 		Username: testUsername,
 		Email:    testEmail,
 		Password: testPassword,
 	})
 	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.GetAccessToken())
 
 	var token = resp.GetAccessToken()
 
-	authResp, err := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: token}) // get userId from token
-	assert.NoError(t, err)
-	assert.NotEmpty(t, authResp.GetUserId())
+	testCases := []struct {
+		name               string
+		accessToken        string
+		expectUserId       bool
+		expectError        bool
+		expectedStatusCode codes.Code
+	}{
+		{
+			name:               "userId from token",
+			accessToken:        token,
+			expectUserId:       true,
+			expectError:        false,
+			expectedStatusCode: codes.OK,
+		},
+		{
+			name:               "empty token",
+			accessToken:        "",
+			expectUserId:       false,
+			expectError:        true,
+			expectedStatusCode: codes.InvalidArgument,
+		},
+		{
+			name:               "invalid token",
+			accessToken:        "q",
+			expectUserId:       false,
+			expectError:        true,
+			expectedStatusCode: codes.Unauthenticated,
+		},
+	}
 
-	authResp, err = client.Authenticate(ctx, &proto.AuthRequest{AccessToken: ""}) // empty token
-	assert.Error(t, err)
-	assert.Empty(t, authResp.GetUserId())
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.InvalidArgument, st.Code())
-
-	authResp, err = client.Authenticate(ctx, &proto.AuthRequest{AccessToken: "token"}) // invalid token
-	assert.Error(t, err)
-	assert.Empty(t, authResp.GetUserId())
-	st, _ = status.FromError(err)
-	assert.Equal(t, codes.Unauthenticated, st.Code())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := client.Authenticate(ctx, &proto.AuthRequest{
+				AccessToken: tc.accessToken,
+			})
+			assert.Equal(t, tc.expectError, err != nil)
+			assert.Equal(t, tc.expectUserId, resp.GetUserId() != "")
+			st, _ := status.FromError(err)
+			assert.Equal(t, tc.expectedStatusCode, st.Code())
+		})
+	}
 }
 
 func Test_UserExists(t *testing.T) {
-	client := newClient(t)
+	var (
+		client = newClient(t)
+		ctx    = context.Background()
+	)
 
-	resp, _ := client.SignUp(ctx, &proto.SignUpRequest{ // create user
+	resp, err := client.SignUp(ctx, &proto.SignUpRequest{
 		Username: testUsername,
 		Email:    testEmail,
 		Password: testPassword,
 	})
-
-	authResp, _ := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: resp.GetAccessToken()}) // get userId from token
-
-	existsResp, err := client.UserExists(ctx, &proto.UserExistsRequest{UserId: authResp.GetUserId()})
 	assert.NoError(t, err)
-	assert.True(t, existsResp.GetExists())
+	authResp, err := client.Authenticate(ctx, &proto.AuthRequest{AccessToken: resp.GetAccessToken()})
+	assert.NoError(t, err)
 
-	existsResp, err = client.UserExists(ctx, &proto.UserExistsRequest{UserId: ""}) // empty userId
-	assert.Error(t, err)
-	assert.False(t, existsResp.GetExists())
-	st, _ := status.FromError(err)
-	assert.Equal(t, codes.InvalidArgument, st.Code())
+	var userId = authResp.GetUserId()
 
-	existsResp, err = client.UserExists(ctx, &proto.UserExistsRequest{UserId: "5"}) // user with userId "5" doesn't exist
-	assert.Error(t, err)
-	assert.False(t, existsResp.GetExists())
-	st, _ = status.FromError(err)
-	assert.Equal(t, codes.NotFound, st.Code())
+	testCases := []struct {
+		name               string
+		userId             string
+		expectExistence    bool
+		expectError        bool
+		expectedStatusCode codes.Code
+	}{
+		{
+			name:               "user exists",
+			userId:             userId,
+			expectExistence:    true,
+			expectError:        false,
+			expectedStatusCode: codes.OK,
+		},
+		{
+			name:               "empty userId",
+			userId:             "",
+			expectExistence:    false,
+			expectError:        true,
+			expectedStatusCode: codes.InvalidArgument,
+		},
+		{
+			name:               "invalid userId",
+			userId:             "-1",
+			expectExistence:    false,
+			expectError:        true,
+			expectedStatusCode: codes.NotFound,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp, err := client.UserExists(ctx, &proto.UserExistsRequest{
+				UserId: tc.userId,
+			})
+			assert.Equal(t, tc.expectError, err != nil)
+			assert.Equal(t, tc.expectExistence, resp.GetExists())
+			st, _ := status.FromError(err)
+			assert.Equal(t, tc.expectedStatusCode, st.Code())
+		})
+	}
 }

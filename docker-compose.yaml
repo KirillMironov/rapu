@@ -4,8 +4,8 @@ services:
 
   gateway:
     build:
-      context: ./gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: gateway/Dockerfile
     container_name: rapu-gateway
     environment:
       - PORT=7002
@@ -21,8 +21,8 @@ services:
 
   messenger:
     build:
-      context: ./messenger
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: messenger/Dockerfile
     container_name: rapu-messenger
     environment:
       - PORT=7004
@@ -38,8 +38,8 @@ services:
 
   users:
     build:
-      context: ./users
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: users/Dockerfile
     container_name: rapu-users
     environment:
       - PORT=7001
@@ -52,8 +52,8 @@ services:
 
   posts:
     build:
-      context: ./posts
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: posts/Dockerfile
     container_name: rapu-posts
     environment:
       - PORT=7003

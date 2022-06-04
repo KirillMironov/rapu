@@ -21,19 +21,40 @@ func TestHandler_createPost(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		message            createPostForm
+		message            string
 		bearerToken        string
 		expectedStatusCode int
 	}{
-		{createPostForm{testMessage}, testBearerToken, http.StatusCreated},
-		{createPostForm{testMessage}, "", http.StatusUnauthorized},
-		{createPostForm{""}, testBearerToken, http.StatusBadRequest},
-		{createPostForm{""}, "", http.StatusUnauthorized},
+		{
+			message:            testMessage,
+			bearerToken:        testBearerToken,
+			expectedStatusCode: http.StatusCreated,
+		},
+		{
+			message:            testMessage,
+			bearerToken:        "",
+			expectedStatusCode: http.StatusUnauthorized,
+		},
+		{
+			message:            "",
+			bearerToken:        testBearerToken,
+			expectedStatusCode: http.StatusBadRequest,
+		},
+		{
+			message:            "",
+			bearerToken:        "",
+			expectedStatusCode: http.StatusUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		body, err := json.Marshal(tc.message)
+
+		body, err := json.Marshal(struct {
+			Message string `json:"message" binding:"required"`
+		}{
+			Message: tc.message,
+		})
 		assert.NoError(t, err)
 
 		w := httptest.NewRecorder()
@@ -51,17 +72,39 @@ func TestHandler_getPostsByUserId(t *testing.T) {
 
 	testCases := []struct {
 		userId             string
-		form               getPostsByUserIdForm
+		offset             string
+		limit              int64
 		expectedStatusCode int
 	}{
-		{testUserId, getPostsByUserIdForm{}, http.StatusOK},
-		{testUserId, getPostsByUserIdForm{Offset: testOffset, Limit: testLimit}, http.StatusOK},
-		{"", getPostsByUserIdForm{}, http.StatusNotFound},
-		{"", getPostsByUserIdForm{Offset: testOffset, Limit: testLimit}, http.StatusNotFound},
+		{
+			userId:             testUserId,
+			offset:             "",
+			limit:              0,
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			userId:             testUserId,
+			offset:             testOffset,
+			limit:              testLimit,
+			expectedStatusCode: http.StatusOK,
+		},
+		{
+			userId:             "",
+			offset:             "",
+			limit:              0,
+			expectedStatusCode: http.StatusNotFound,
+		},
+		{
+			userId:             "",
+			offset:             testOffset,
+			limit:              testLimit,
+			expectedStatusCode: http.StatusNotFound,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
+
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/api/v1/posts/"+tc.userId, nil)
 		assert.NoError(t, err)

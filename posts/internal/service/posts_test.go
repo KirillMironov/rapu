@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/KirillMironov/rapu/posts/domain"
-	"github.com/KirillMironov/rapu/posts/test/mocks"
+	"context"
+	"github.com/KirillMironov/rapu/posts/internal/domain"
+	"github.com/KirillMironov/rapu/posts/test/mock"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -12,7 +13,10 @@ const (
 	message = "Hello"
 )
 
-var svc = NewPostsService(&mocks.PostsRepositoryMock{}, 10)
+var (
+	postsService = NewPosts(&mock.PostsRepository{}, 10, mock.Logger{})
+	ctx          = context.Background()
+)
 
 func TestPostsService_Create(t *testing.T) {
 	t.Parallel()
@@ -29,7 +33,7 @@ func TestPostsService_Create(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-		err := svc.Create(tc.post)
+		err := postsService.Create(ctx, tc.post)
 		assert.Equal(t, tc.expectedError, err)
 	}
 }
@@ -47,7 +51,7 @@ func TestPostsService_GetByUserId(t *testing.T) {
 
 	for _, tc := range testCases {
 		tc := tc
-		_, err := svc.GetByUserId(tc.userId, "", 0)
+		_, err := postsService.GetByUserId(ctx, tc.userId, "", 0)
 		assert.Equal(t, tc.expectedError, err)
 	}
 }

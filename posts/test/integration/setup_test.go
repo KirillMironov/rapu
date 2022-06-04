@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/KirillMironov/rapu/posts/internal/delivery"
 	"github.com/KirillMironov/rapu/posts/internal/delivery/proto"
-	_mongo "github.com/KirillMironov/rapu/posts/internal/repository/mongo"
+	"github.com/KirillMironov/rapu/posts/internal/repository"
 	"github.com/KirillMironov/rapu/posts/internal/service"
-	"github.com/KirillMironov/rapu/posts/test/mocks"
+	"github.com/KirillMironov/rapu/posts/test/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,24 +26,36 @@ import (
 const (
 	mongoImage      = "mongo:4.4-rc-focal"
 	mongoPort       = "27017"
-	mongoDB         = "rapu"
+	mongoDB         = "mongo"
 	mongoCollection = "posts"
-	maxLimit        = 10
+	postsPerPage    = 10
 )
 
 func newClient(t *testing.T) proto.PostsClient {
-	db := mongoSetup(t)
-	handler := handlerSetup(db)
+	t.Helper()
 
-	var listener = bufconn.Listen(1024 * 1024)
+	var (
+		db       = newMongo(t)
+		handler  = newHandler(t, db)
+		listener = bufconn.Listen(1024 * 1024)
+		ctx      = context.Background()
+	)
+
 	go func() {
-		log.Fatal(handler.Serve(listener))
+		err := handler.Serve(listener)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
 
-	conn, err := grpc.DialContext(ctx, "", grpc.WithTransportCredentials(insecure.NewCredentials()),
+	conn, err := grpc.DialContext(
+		ctx,
+		"bufnet",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 			return listener.Dial()
-		}))
+		}),
+	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
@@ -53,32 +65,39 @@ func newClient(t *testing.T) proto.PostsClient {
 	return proto.NewPostsClient(conn)
 }
 
-func handlerSetup(db *mongo.Collection) *grpc.Server {
-	repo := _mongo.NewPostsRepository(db)
-	svc := service.NewPostsService(repo, maxLimit)
-	return delivery.NewHandler(svc, &mocks.LoggerMock{})
+func newHandler(t *testing.T, db *mongo.Collection) *grpc.Server {
+	t.Helper()
+
+	postsRepository := repository.NewPosts(db)
+	postsService := service.NewPosts(postsRepository, postsPerPage, mock.Logger{})
+
+	return delivery.NewHandler(postsService)
 }
 
-func mongoSetup(t *testing.T) *mongo.Collection {
-	request := testcontainers.ContainerRequest{
+func newMongo(t *testing.T) *mongo.Collection {
+	t.Helper()
+
+	var ctx = context.Background()
+
+	containerRequest := testcontainers.ContainerRequest{
 		Image:        mongoImage,
 		ExposedPorts: []string{mongoPort},
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: request,
+		ContainerRequest: containerRequest,
 		Started:          true,
 	})
 	require.NoError(t, err)
 
-	ip, err := container.Host(ctx)
+	host, err := container.Host(ctx)
 	require.NoError(t, err)
 	mappedPort, err := container.MappedPort(ctx, mongoPort)
 	require.NoError(t, err)
 
-	conn := fmt.Sprintf("mongodb://%s:%s", ip, mappedPort.Port())
+	connectionString := fmt.Sprintf("mongodb://%s:%s", host, mappedPort.Port())
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(conn))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionString))
 	require.NoError(t, err)
 
 	err = client.Ping(ctx, readpref.Primary())
