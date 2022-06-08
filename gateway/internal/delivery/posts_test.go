@@ -3,6 +3,7 @@ package delivery
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -61,6 +62,7 @@ func TestHandler_createPost(t *testing.T) {
 		req, err := http.NewRequest(http.MethodPost, "/api/v1/posts", bytes.NewReader(body))
 		assert.NoError(t, err)
 		req.Header.Set("Authorization", tc.bearerToken)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)

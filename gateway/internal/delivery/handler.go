@@ -2,7 +2,9 @@ package delivery
 
 import (
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
-	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
 type Handler struct {
@@ -23,10 +25,18 @@ func NewHandler(usersClient proto.UsersClient, postsClient proto.PostsClient, lo
 	}
 }
 
-func (h *Handler) InitRoutes() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
-	router.Use(gin.Recovery(), h.middleware)
+func (h Handler) InitRoutes() *echo.Echo {
+	router := echo.New()
+	router.Validator = &Validator{validator: validator.New()}
+	router.HTTPErrorHandler = h.errorHandler
+	router.Use(
+		middleware.Recover(),
+		middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins: []string{"*"},
+			AllowHeaders: []string{echo.HeaderContentType, echo.HeaderContentLength, echo.HeaderAuthorization},
+			AllowMethods: []string{echo.GET, echo.POST, echo.OPTIONS},
+		}),
+	)
 
 	v1 := router.Group("/api/v1")
 	{
@@ -38,7 +48,7 @@ func (h *Handler) InitRoutes() *gin.Engine {
 		posts := v1.Group("/posts")
 		{
 			posts.GET("/:userId", h.getPostsByUserId)
-			posts.Use(h.auth).POST("", h.createPost)
+			posts.POST("", h.createPost, h.auth)
 		}
 	}
 
