@@ -89,3 +89,16 @@ type Validator struct {
 func (v *Validator) Validate(i interface{}) error {
 	return v.validator.Struct(i)
 }
+
+type Binder struct{}
+
+func (b *Binder) Bind(i interface{}, c echo.Context) error {
+	var binder echo.DefaultBinder
+
+	err := binder.Bind(i, c)
+	if err != nil {
+		return err
+	}
+
+	return c.Validate(i)
+}
