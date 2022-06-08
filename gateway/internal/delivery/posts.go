@@ -11,15 +11,12 @@ func (h Handler) createPost(c echo.Context) error {
 		Message string `json:"message" validate:"required"`
 	}
 
-	if err := c.Bind(&form); err != nil {
+	err := c.Bind(&form)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	if err := c.Validate(form); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	_, err := h.postsClient.Create(c.Request().Context(), &proto.CreateRequest{
+	_, err = h.postsClient.Create(c.Request().Context(), &proto.CreateRequest{
 		UserId:  c.Get(userIdKey).(string),
 		Message: form.Message,
 	})
@@ -36,7 +33,8 @@ func (h Handler) getPostsByUserId(c echo.Context) error {
 		Limit  int64  `form:"limit"`
 	}
 
-	if err := c.Bind(&form); err != nil {
+	err := c.Bind(&form)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

@@ -15,11 +15,8 @@ func (h Handler) signUp(c echo.Context) error {
 		Password string `json:"password" validate:"required"`
 	}
 
-	if err := c.Bind(&form); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if err := c.Validate(form); err != nil {
+	err := c.Bind(&form)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -41,11 +38,8 @@ func (h Handler) signIn(c echo.Context) error {
 		Password string `json:"password" validate:"required"`
 	}
 
-	if err := c.Bind(&form); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-
-	if err := c.Validate(form); err != nil {
+	err := c.Bind(&form)
+	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

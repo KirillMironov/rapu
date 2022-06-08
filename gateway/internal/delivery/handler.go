@@ -29,6 +29,7 @@ func (h Handler) InitRoutes() *echo.Echo {
 	router := echo.New()
 	router.Validator = &Validator{validator: validator.New()}
 	router.HTTPErrorHandler = h.errorHandler
+	router.Binder = &Binder{}
 	router.Use(
 		middleware.Recover(),
 		middleware.CORSWithConfig(middleware.CORSConfig{
