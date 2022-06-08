@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"github.com/KirillMironov/rapu/gateway/config"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
@@ -51,15 +50,12 @@ func main() {
 	// App
 	handler := delivery.NewHandler(usersClient, postsClient, logger)
 
-	// Gin
-	srv := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: handler.InitRoutes(),
-	}
+	// Echo
+	echo := handler.InitRoutes()
 
 	go func() {
-		err := srv.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		err := echo.Start(":" + cfg.Port)
+		if err != nil && err != http.ErrServerClosed {
 			logger.Fatal(err)
 		}
 	}()
@@ -75,7 +71,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := echo.Shutdown(ctx); err != nil {
 		logger.Fatal(err)
 	}
 }

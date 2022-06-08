@@ -2,82 +2,52 @@ package delivery
 
 import (
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
-	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 
-func (h *Handler) createPost(c *gin.Context) {
+func (h Handler) createPost(c echo.Context) error {
 	var form struct {
-		Message string `json:"message" binding:"required"`
+		Message string `json:"message" validate:"required"`
 	}
 
-	err := c.BindJSON(&form)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+	if err := c.Bind(&form); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	_, err = h.postsClient.Create(c, &proto.CreateRequest{
-		UserId:  c.GetString(userIdKey),
+	if err := c.Validate(form); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	_, err := h.postsClient.Create(c.Request().Context(), &proto.CreateRequest{
+		UserId:  c.Get(userIdKey).(string),
 		Message: form.Message,
 	})
 	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok {
-			h.logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		switch st.Code() {
-		case codes.InvalidArgument:
-			c.Status(http.StatusBadRequest)
-		default:
-			h.logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-		}
-		return
+		return err
 	}
 
-	c.Status(http.StatusCreated)
+	return c.NoContent(http.StatusCreated)
 }
 
-func (h *Handler) getPostsByUserId(c *gin.Context) {
+func (h Handler) getPostsByUserId(c echo.Context) error {
 	var form struct {
 		Offset string `form:"offset"`
 		Limit  int64  `form:"limit"`
 	}
 
-	err := c.Bind(&form)
-	if err != nil {
-		c.Status(http.StatusBadRequest)
-		return
+	if err := c.Bind(&form); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	resp, err := h.postsClient.GetByUserId(c, &proto.GetByUserIdRequest{
+	resp, err := h.postsClient.GetByUserId(c.Request().Context(), &proto.GetByUserIdRequest{
 		UserId: c.Param("userId"),
 		Offset: form.Offset,
 		Limit:  form.Limit,
 	})
 	if err != nil {
-		st, ok := status.FromError(err)
-		if !ok {
-			h.logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		switch st.Code() {
-		case codes.InvalidArgument:
-			c.Status(http.StatusBadRequest)
-		case codes.NotFound:
-			c.Status(http.StatusNotFound)
-		default:
-			h.logger.Error(err)
-			c.Status(http.StatusInternalServerError)
-		}
-		return
+		return err
 	}
 
-	c.JSON(http.StatusOK, resp.GetPosts())
+	return c.JSON(http.StatusOK, resp.GetPosts())
 }
