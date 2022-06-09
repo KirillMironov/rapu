@@ -3,15 +3,16 @@ package delivery
 import (
 	"context"
 	"github.com/KirillMironov/rapu/messenger/internal/domain"
-	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/websocket"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"net/http"
 )
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 type Handler struct {
@@ -34,41 +35,43 @@ func NewHandler(clientsService ClientsService, logger Logger) *Handler {
 	}
 }
 
-func (h *Handler) InitRoutes() *gin.Engine {
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
-	router.Use(gin.Recovery(), h.middleware)
+func (h *Handler) InitRoutes() *echo.Echo {
+	router := echo.New()
+	router.Validator = &Validator{validator: validator.New()}
+	router.Binder = &Binder{}
+	router.Use(
+		middleware.Recover(),
+		middleware.CORSWithConfig(middleware.CORSConfig{
+			AllowOrigins: []string{"*"},
+			AllowHeaders: []string{echo.HeaderContentType, echo.HeaderContentLength, echo.HeaderAuthorization},
+			AllowMethods: []string{echo.GET, echo.OPTIONS},
+		}),
+	)
 
 	v1 := router.Group("/api/v1")
 	{
 		messenger := v1.Group("/messenger")
 		{
-			messenger.GET("/connect", h.connect)
+			messenger.GET("/connect", h.connect, h.auth)
 		}
 	}
 
 	return router
 }
 
-func (h *Handler) connect(c *gin.Context) {
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		h.logger.Error(err)
-		return
-	}
-
+func (h *Handler) connect(c echo.Context) error {
 	var form struct {
-		ToUserId    string `form:"toUserId" binding:"required"`
-		AccessToken string `form:"access_token" binding:"required"`
+		ToUserId string `form:"toUserId" validate:"required"`
 	}
 
-	err = c.Bind(&form)
+	err := c.Bind(&form)
 	if err != nil {
-		closeMessage := websocket.FormatCloseMessage(websocket.CloseUnsupportedData, err.Error())
-		_ = conn.WriteMessage(websocket.CloseMessage, closeMessage)
-		conn.Close()
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
 	var client = domain.Client{
@@ -76,7 +79,7 @@ func (h *Handler) connect(c *gin.Context) {
 		Conn:     conn,
 	}
 
-	err = h.clientsService.Connect(c, form.AccessToken, client)
+	err = h.clientsService.Connect(c.Request().Context(), c.Get(jwtKey).(string), client)
 	if err != nil {
 		var closeMessage []byte
 		switch err {
@@ -90,4 +93,6 @@ func (h *Handler) connect(c *gin.Context) {
 		_ = conn.WriteMessage(websocket.CloseMessage, closeMessage)
 		conn.Close()
 	}
+
+	return nil
 }

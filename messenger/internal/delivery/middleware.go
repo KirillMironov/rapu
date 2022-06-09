@@ -1,20 +1,48 @@
 package delivery
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
 	"net/http"
+	"strings"
 )
 
-func (h *Handler) middleware(c *gin.Context) {
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Methods", "GET, OPTIONS")
-	c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Authorization")
-	c.Header("Content-Type", "application/json")
+const jwtKey = "jwt"
 
-	if c.Request.Method == "OPTIONS" {
-		c.AbortWithStatus(http.StatusOK)
-		return
+func (h Handler) auth(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		header := c.Request().Header.Get("Authorization")
+		if header == "" {
+			return echo.NewHTTPError(http.StatusUnauthorized)
+		}
+
+		token := strings.Split(header, "Bearer ")
+		if len(token) != 2 || token[1] == "" {
+			return echo.NewHTTPError(http.StatusUnauthorized)
+		}
+
+		c.Set(jwtKey, token)
+		return next(c)
+	}
+}
+
+type Validator struct {
+	validator *validator.Validate
+}
+
+func (v Validator) Validate(i interface{}) error {
+	return v.validator.Struct(i)
+}
+
+type Binder struct{}
+
+func (Binder) Bind(i interface{}, c echo.Context) error {
+	var binder echo.DefaultBinder
+
+	err := binder.Bind(i, c)
+	if err != nil {
+		return err
 	}
 
-	c.Next()
+	return c.Validate(i)
 }
