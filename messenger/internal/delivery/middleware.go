@@ -11,7 +11,7 @@ const jwtKey = "jwt"
 
 func (h Handler) auth(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		header := c.Request().Header.Get("Authorization")
+		header := c.Request().Header.Get(echo.HeaderAuthorization)
 		if header == "" {
 			return echo.NewHTTPError(http.StatusUnauthorized)
 		}
@@ -21,7 +21,7 @@ func (h Handler) auth(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized)
 		}
 
-		c.Set(jwtKey, token)
+		c.Set(jwtKey, token[1])
 		return next(c)
 	}
 }
