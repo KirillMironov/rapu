@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"github.com/KirillMironov/rapu/gateway/test/mock"
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
@@ -97,6 +98,7 @@ func TestHandler_signUp(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodPost, "/api/v1/users/sign-up", bytes.NewReader(body))
 		assert.NoError(t, err)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
@@ -148,6 +150,7 @@ func TestHandler_signIn(t *testing.T) {
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodPost, "/api/v1/users/sign-in", bytes.NewReader(body))
 		assert.NoError(t, err)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 
 		router.ServeHTTP(w, req)
 		assert.Equal(t, tc.expectedStatusCode, w.Result().StatusCode)
