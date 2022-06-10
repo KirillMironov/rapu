@@ -41,46 +41,57 @@ func (h Handler) auth(next echo.HandlerFunc) echo.HandlerFunc {
 }
 
 func (h Handler) errorHandler(err error, c echo.Context) {
-	var (
-		code    int
-		message interface{}
-	)
-
-	if he, ok := err.(*echo.HTTPError); ok {
-		code = he.Code
-		message = he.Message
-	} else if st, ok := status.FromError(err); ok {
-		switch st.Code() {
-		case codes.InvalidArgument:
-			code = http.StatusBadRequest
-		case codes.NotFound:
-			code = http.StatusNotFound
-		case codes.AlreadyExists:
-			code = http.StatusConflict
-		case codes.Unauthenticated:
-			code = http.StatusUnauthorized
-		default:
-			h.logger.Error(err)
-			code = http.StatusInternalServerError
-		}
-	} else {
-		h.logger.Error(err)
-		code = http.StatusInternalServerError
-		message = http.StatusText(code)
+	if c.Response().Committed {
+		return
 	}
 
-	if !c.Response().Committed {
-		if c.Request().Method == echo.HEAD {
-			err := c.NoContent(code)
-			if err != nil {
-				h.logger.Error(err)
-			}
-		} else {
-			err := c.JSON(code, echo.Map{"message": message})
-			if err != nil {
-				h.logger.Error(err)
+	var httpError *echo.HTTPError
+
+	switch v := err.(type) {
+	case *echo.HTTPError:
+		httpError = v
+		if v.Internal != nil {
+			if internalErr, ok := v.Internal.(*echo.HTTPError); ok {
+				httpError = internalErr
 			}
 		}
+	case interface{ GRPCStatus() *status.Status }:
+		st, ok := status.FromError(err)
+		if !ok {
+			httpError = echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+			break
+		}
+
+		switch st.Code() {
+		case codes.InvalidArgument:
+			httpError = echo.NewHTTPError(http.StatusBadRequest, http.StatusText(http.StatusBadRequest))
+		case codes.NotFound:
+			httpError = echo.NewHTTPError(http.StatusNotFound, http.StatusText(http.StatusNotFound))
+		case codes.AlreadyExists:
+			httpError = echo.NewHTTPError(http.StatusConflict, http.StatusText(http.StatusConflict))
+		case codes.Unauthenticated:
+			httpError = echo.NewHTTPError(http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))
+		default:
+			h.logger.Error(err)
+			httpError = echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+		}
+	default:
+		httpError = echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+
+	code := httpError.Code
+	message := httpError.Message
+	if m, ok := httpError.Message.(string); ok {
+		message = echo.Map{"message": m}
+	}
+
+	if c.Request().Method == http.MethodHead {
+		err = c.NoContent(httpError.Code)
+	} else {
+		err = c.JSON(code, message)
+	}
+	if err != nil {
+		h.logger.Error(err)
 	}
 }
 
