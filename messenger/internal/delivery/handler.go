@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"context"
+	"github.com/KirillMironov/rapu/gateway/pkg/echox"
 	"github.com/KirillMironov/rapu/messenger/internal/domain"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/websocket"
@@ -38,8 +39,8 @@ func NewHandler(clientsService ClientsService, logger Logger) *Handler {
 
 func (h *Handler) InitRoutes() *echo.Echo {
 	router := echo.New()
-	router.Validator = &Validator{validator: validator.New()}
-	router.Binder = &Binder{}
+	router.Binder = echox.Binder{}
+	router.Validator = echox.StructValidator{Validator: validator.New()}
 	router.Use(
 		middleware.Recover(),
 		middleware.CORSWithConfig(middleware.CORSConfig{
