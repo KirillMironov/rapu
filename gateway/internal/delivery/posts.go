@@ -29,8 +29,8 @@ func (h Handler) createPost(c echo.Context) error {
 
 func (h Handler) getPostsByUserId(c echo.Context) error {
 	var form struct {
-		Offset string `form:"offset"`
-		Limit  int64  `form:"limit"`
+		Offset string `query:"offset"`
+		Limit  int64  `query:"limit"`
 	}
 
 	err := c.Bind(&form)
