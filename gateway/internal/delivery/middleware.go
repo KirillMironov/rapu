@@ -57,6 +57,8 @@ func (h Handler) errorHandler(err error, c echo.Context) {
 			code = http.StatusNotFound
 		case codes.AlreadyExists:
 			code = http.StatusConflict
+		case codes.Unauthenticated:
+			code = http.StatusUnauthorized
 		default:
 			h.logger.Error(err)
 			code = http.StatusInternalServerError
