@@ -9,15 +9,17 @@ function connect() {
         document.getElementById('messages_area').value = '';
     }
 
-    socket = new WebSocket('ws://localhost:7004/api/v1/messenger/connect?toUserId='
-        + document.getElementById('toUserId').value
-        + '&access_token='
-        + document.getElementById('accessToken').value);
+    let toUserId = document.getElementById('toUserId').value;
+
+    socket = new WebSocket(`ws://localhost:7004/api/v1/messenger/connect?toUserId=${toUserId}`);
 
     console.log('Attempting Connection...');
 
     socket.onopen = () => {
         console.log('Successfully Connected');
+
+        sendAccessToken();
+
         document.getElementById('connection_status').innerHTML = GREEN_CIRCLE_EMOJI;
     };
 
@@ -53,4 +55,14 @@ function sendMessage() {
 
     socket.send(message);
     document.getElementById('message_input').value = '';
+}
+
+function sendAccessToken() {
+    let accessToken = document.getElementById('accessToken').value;
+
+    if (socket == null || accessToken === '') {
+        return;
+    }
+
+    socket.send(accessToken);
 }
