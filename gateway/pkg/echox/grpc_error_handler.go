@@ -9,6 +9,7 @@ import (
 
 type grpcError interface {
 	GRPCStatus() *status.Status
+	Error() string
 }
 
 func GRPCErrorHandler(err error, c echo.Context) {
@@ -18,11 +19,11 @@ func GRPCErrorHandler(err error, c echo.Context) {
 
 	var httpError *echo.HTTPError
 
-	switch v := err.(type) {
+	switch err := err.(type) {
 	case *echo.HTTPError:
-		httpError = v
-		if v.Internal != nil {
-			if internalErr, ok := v.Internal.(*echo.HTTPError); ok {
+		httpError = err
+		if err.Internal != nil {
+			if internalErr, ok := err.Internal.(*echo.HTTPError); ok {
 				httpError = internalErr
 			}
 		}
