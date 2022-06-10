@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"github.com/KirillMironov/rapu/messenger/config"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
@@ -62,20 +61,15 @@ func main() {
 	clientsService := service.NewClients(usersClient, messagesService, logger)
 	handler := delivery.NewHandler(clientsService, logger)
 
-	// Gin
-	srv := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: handler.InitRoutes(),
-	}
+	// Echo
+	echo := handler.InitRoutes()
 
 	go func() {
-		err := srv.ListenAndServe()
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+		err := echo.Start(":" + cfg.Port)
+		if err != nil && err != http.ErrServerClosed {
 			logger.Fatal(err)
 		}
 	}()
-
-	logger.Infof("messenger started on port %s", cfg.Port)
 
 	// Graceful Shutdown
 	quit := make(chan os.Signal, 1)
@@ -86,7 +80,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	if err := srv.Shutdown(ctx); err != nil {
+	if err := echo.Shutdown(ctx); err != nil {
 		logger.Fatal(err)
 	}
 }
