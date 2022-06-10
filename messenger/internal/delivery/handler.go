@@ -13,6 +13,7 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
 type Handler struct {
@@ -52,7 +53,7 @@ func (h *Handler) InitRoutes() *echo.Echo {
 	{
 		messenger := v1.Group("/messenger")
 		{
-			messenger.GET("/connect", h.connect, h.auth)
+			messenger.GET("/connect", h.connect)
 		}
 	}
 
@@ -61,7 +62,7 @@ func (h *Handler) InitRoutes() *echo.Echo {
 
 func (h *Handler) connect(c echo.Context) error {
 	var form struct {
-		ToUserId string `form:"toUserId" validate:"required"`
+		ToUserId string `query:"toUserId" validate:"required"`
 	}
 
 	err := c.Bind(&form)
@@ -74,12 +75,20 @@ func (h *Handler) connect(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	messageType, accessToken, err := conn.ReadMessage()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	if messageType != websocket.TextMessage {
+		return echo.NewHTTPError(http.StatusBadRequest, "unsupported message type")
+	}
+
 	var client = domain.Client{
 		ToUserId: form.ToUserId,
 		Conn:     conn,
 	}
 
-	err = h.clientsService.Connect(c.Request().Context(), c.Get(jwtKey).(string), client)
+	err = h.clientsService.Connect(c.Request().Context(), string(accessToken), client)
 	if err != nil {
 		var closeMessage []byte
 		switch err {
@@ -88,6 +97,7 @@ func (h *Handler) connect(c echo.Context) error {
 		case domain.ErrUserNotFound:
 			closeMessage = websocket.FormatCloseMessage(websocket.ClosePolicyViolation, err.Error())
 		default:
+			h.logger.Error(err)
 			closeMessage = websocket.FormatCloseMessage(websocket.CloseInternalServerErr, err.Error())
 		}
 		_ = conn.WriteMessage(websocket.CloseMessage, closeMessage)

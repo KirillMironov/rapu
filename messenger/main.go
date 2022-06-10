@@ -71,8 +71,6 @@ func main() {
 		}
 	}()
 
-	logger.Infof("messenger started on port %s", cfg.Port)
-
 	// Graceful Shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
