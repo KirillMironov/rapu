@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/KirillMironov/rapu/gateway/pkg/echox"
 	"github.com/KirillMironov/rapu/messenger/internal/domain"
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -40,7 +39,7 @@ func NewHandler(clientsService ClientsService, logger Logger) *Handler {
 func (h *Handler) InitRoutes() *echo.Echo {
 	router := echo.New()
 	router.Binder = echox.Binder{}
-	router.Validator = echox.StructValidator{Validator: validator.New()}
+	router.Validator = echox.NewStructValidator()
 	router.Use(
 		middleware.Recover(),
 		middleware.CORSWithConfig(middleware.CORSConfig{
