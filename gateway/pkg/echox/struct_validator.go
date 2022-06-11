@@ -2,10 +2,14 @@ package echox
 
 import "github.com/go-playground/validator/v10"
 
-type StructValidator struct {
-	Validator *validator.Validate
+type structValidator struct {
+	validator *validator.Validate
 }
 
-func (sv StructValidator) Validate(i interface{}) error {
-	return sv.Validator.Struct(i)
+func NewStructValidator() *structValidator {
+	return &structValidator{validator.New()}
+}
+
+func (sv structValidator) Validate(i interface{}) error {
+	return sv.validator.Struct(i)
 }
