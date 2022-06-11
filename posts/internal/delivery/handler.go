@@ -12,6 +12,7 @@ import (
 
 type Handler struct {
 	postsService PostsService
+	logger       Logger
 	proto.UnimplementedPostsServer
 }
 
@@ -20,15 +21,20 @@ type PostsService interface {
 	GetByUserId(ctx context.Context, userId, offset string, limit int64) ([]domain.Post, error)
 }
 
-func NewHandler(postsService PostsService) *grpc.Server {
+type Logger interface {
+	Error(args ...interface{})
+}
+
+func NewHandler(postsService PostsService, logger Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterPostsServer(server, &Handler{
 		postsService: postsService,
+		logger:       logger,
 	})
 	return server
 }
 
-func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*proto.CreateResponse, error) {
+func (h Handler) Create(ctx context.Context, request *proto.CreateRequest) (*proto.CreateResponse, error) {
 	var post = domain.Post{
 		UserId:  request.GetUserId(),
 		Message: request.GetMessage(),
@@ -40,6 +46,7 @@ func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*pr
 		case domain.ErrEmptyParameters:
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		default:
+			h.logger.Error(err)
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
@@ -47,7 +54,7 @@ func (h *Handler) Create(ctx context.Context, request *proto.CreateRequest) (*pr
 	return &proto.CreateResponse{}, nil
 }
 
-func (h *Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
+func (h Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdRequest) (*proto.GetByUserIdResponse, error) {
 	posts, err := h.postsService.GetByUserId(ctx, request.GetUserId(), request.GetOffset(), request.GetLimit())
 	if err != nil {
 		switch err {
@@ -56,6 +63,7 @@ func (h *Handler) GetByUserId(ctx context.Context, request *proto.GetByUserIdReq
 		case domain.ErrEmptyResult:
 			return nil, status.Error(codes.NotFound, err.Error())
 		default:
+			h.logger.Error(err)
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}

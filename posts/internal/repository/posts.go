@@ -17,12 +17,12 @@ func NewPosts(db *mongo.Collection) *Posts {
 	return &Posts{db: db}
 }
 
-func (p *Posts) Create(ctx context.Context, post domain.Post) error {
+func (p Posts) Create(ctx context.Context, post domain.Post) error {
 	_, err := p.db.InsertOne(ctx, post)
 	return err
 }
 
-func (p *Posts) GetByUserId(ctx context.Context, userId, offset string, limit int64) ([]domain.Post, error) {
+func (p Posts) GetByUserId(ctx context.Context, userId, offset string, limit int64) ([]domain.Post, error) {
 	id, err := primitive.ObjectIDFromHex(offset)
 	if err != nil && err != primitive.ErrInvalidHex {
 		return nil, err
