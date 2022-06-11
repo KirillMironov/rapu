@@ -18,7 +18,7 @@ func NewUsers(db *sqlx.DB) *Users {
 	return &Users{db: db}
 }
 
-func (u *Users) Create(ctx context.Context, user domain.User) (string, error) {
+func (u Users) Create(ctx context.Context, user domain.User) (string, error) {
 	var sqlStr = "INSERT INTO users (username, email, password, created_at) VALUES ($1, $2, $3, $4) RETURNING id"
 	var userId string
 
@@ -39,7 +39,7 @@ func (u *Users) Create(ctx context.Context, user domain.User) (string, error) {
 	return userId, tx.Commit()
 }
 
-func (u *Users) GetByEmail(ctx context.Context, email string) (domain.User, error) {
+func (u Users) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	var sqlStr = "SELECT id, password FROM users WHERE email = $1"
 	var user domain.User
 
@@ -54,7 +54,7 @@ func (u *Users) GetByEmail(ctx context.Context, email string) (domain.User, erro
 	return user, nil
 }
 
-func (u *Users) CheckExistence(ctx context.Context, userId string) (bool, error) {
+func (u Users) CheckExistence(ctx context.Context, userId string) (bool, error) {
 	var sqlStr = "SELECT FROM users WHERE id = $1"
 
 	err := u.db.QueryRowxContext(ctx, sqlStr, userId).Scan()
