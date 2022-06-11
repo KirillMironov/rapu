@@ -11,6 +11,7 @@ import (
 
 type Handler struct {
 	usersService UsersService
+	logger       Logger
 	proto.UnimplementedUsersServer
 }
 
@@ -21,15 +22,20 @@ type UsersService interface {
 	UserExists(ctx context.Context, userId string) (bool, error)
 }
 
-func NewHandler(usersService UsersService) *grpc.Server {
+type Logger interface {
+	Error(args ...interface{})
+}
+
+func NewHandler(usersService UsersService, logger Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterUsersServer(server, &Handler{
 		usersService: usersService,
+		logger:       logger,
 	})
 	return server
 }
 
-func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
+func (h Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*proto.Response, error) {
 	var user = domain.User{
 		Username: request.GetUsername(),
 		Email:    request.GetEmail(),
@@ -44,6 +50,7 @@ func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*pr
 		case domain.ErrUserAlreadyExists:
 			return nil, status.Error(codes.AlreadyExists, err.Error())
 		default:
+			h.logger.Error(err)
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
@@ -51,7 +58,7 @@ func (h *Handler) SignUp(ctx context.Context, request *proto.SignUpRequest) (*pr
 	return &proto.Response{AccessToken: token}, nil
 }
 
-func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*proto.Response, error) {
+func (h Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*proto.Response, error) {
 	var user = domain.User{
 		Email:    request.GetEmail(),
 		Password: request.GetPassword(),
@@ -65,6 +72,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 		case domain.ErrUserNotFound, domain.ErrInvalidCredentials:
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		default:
+			h.logger.Error(err)
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}
@@ -72,7 +80,7 @@ func (h *Handler) SignIn(ctx context.Context, request *proto.SignInRequest) (*pr
 	return &proto.Response{AccessToken: token}, nil
 }
 
-func (h *Handler) Authenticate(_ context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
+func (h Handler) Authenticate(_ context.Context, request *proto.AuthRequest) (*proto.AuthResponse, error) {
 	userId, err := h.usersService.Authenticate(request.GetAccessToken())
 	if err != nil {
 		switch err {
@@ -86,7 +94,7 @@ func (h *Handler) Authenticate(_ context.Context, request *proto.AuthRequest) (*
 	return &proto.AuthResponse{UserId: userId}, nil
 }
 
-func (h *Handler) UserExists(ctx context.Context, request *proto.UserExistsRequest) (*proto.UserExistsResponse, error) {
+func (h Handler) UserExists(ctx context.Context, request *proto.UserExistsRequest) (*proto.UserExistsResponse, error) {
 	exists, err := h.usersService.UserExists(ctx, request.GetUserId())
 	if err != nil {
 		switch err {
@@ -95,6 +103,7 @@ func (h *Handler) UserExists(ctx context.Context, request *proto.UserExistsReque
 		case domain.ErrUserNotFound:
 			return nil, status.Error(codes.NotFound, err.Error())
 		default:
+			h.logger.Error(err)
 			return nil, status.Error(codes.Unknown, err.Error())
 		}
 	}

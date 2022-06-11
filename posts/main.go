@@ -47,8 +47,8 @@ func main() {
 
 	// App
 	postsRepository := repository.NewPosts(db)
-	postsService := service.NewPosts(postsRepository, cfg.MaxPostsPerPage, logger)
-	handler := delivery.NewHandler(postsService)
+	postsService := service.NewPosts(postsRepository, cfg.MaxPostsPerPage)
+	handler := delivery.NewHandler(postsService, logger)
 
 	// gRPC Server
 	listener, err := net.Listen("tcp", ":"+cfg.Port)
