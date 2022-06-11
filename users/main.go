@@ -34,16 +34,14 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	// JWT manager
-	jwtManager, err := service.NewJWTManager(cfg.Security.JWTKey, cfg.Security.TokenTTL)
+	// App
+	usersRepository := repository.NewUsers(db)
+	jwtService, err := service.NewJWT(cfg.Security.JWTKey, cfg.Security.TokenTTL)
 	if err != nil {
 		logger.Fatal(err)
 	}
-
-	// App
-	usersRepository := repository.NewUsers(db)
-	usersService := service.NewUsers(usersRepository, jwtManager, logger)
-	handler := delivery.NewHandler(usersService)
+	usersService := service.NewUsers(usersRepository, jwtService)
+	handler := delivery.NewHandler(usersService, logger)
 
 	// gRPC Server
 	listener, err := net.Listen("tcp", ":"+cfg.Port)
