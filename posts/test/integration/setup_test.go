@@ -69,9 +69,9 @@ func newHandler(t *testing.T, db *mongo.Collection) *grpc.Server {
 	t.Helper()
 
 	postsRepository := repository.NewPosts(db)
-	postsService := service.NewPosts(postsRepository, postsPerPage, mock.Logger{})
+	postsService := service.NewPosts(postsRepository, postsPerPage)
 
-	return delivery.NewHandler(postsService)
+	return delivery.NewHandler(postsService, mock.Logger{})
 }
 
 func newMongo(t *testing.T) *mongo.Collection {

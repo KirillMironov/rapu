@@ -72,12 +72,12 @@ func newClient(t *testing.T) proto.UsersClient {
 func newHandler(t *testing.T, db *sqlx.DB) *grpc.Server {
 	t.Helper()
 
-	jwtService, err := service.NewJWTManager(jwtKey, tokenTTL)
+	jwtService, err := service.NewJWT(jwtKey, tokenTTL)
 	require.NoError(t, err)
 	usersRepository := repository.NewUsers(db)
-	usersService := service.NewUsers(usersRepository, jwtService, mock.Logger{})
+	usersService := service.NewUsers(usersRepository, jwtService)
 
-	return delivery.NewHandler(usersService)
+	return delivery.NewHandler(usersService, mock.Logger{})
 }
 
 func newPostgres(t *testing.T) *sqlx.DB {

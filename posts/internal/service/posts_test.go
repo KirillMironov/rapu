@@ -14,7 +14,7 @@ const (
 )
 
 var (
-	postsService = NewPosts(&mock.PostsRepository{}, 10, mock.Logger{})
+	postsService = NewPosts(&mock.PostsRepository{}, 10)
 	ctx          = context.Background()
 )
 
