@@ -40,7 +40,7 @@ func main() {
 
 	err = client.Ping(ctx, readpref.Primary())
 	if err != nil {
-		logger.Fatal()
+		logger.Fatal(err)
 	}
 
 	db := client.Database(cfg.Mongo.DBName).Collection(cfg.Mongo.Collection)
