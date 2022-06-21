@@ -13,7 +13,7 @@ def pipeline(task, name, depends_on):
             "arch": "arm64",
         },
         "trigger": {
-            "branch": ["drone"],
+            "branch": ["main"],
             "event": ["push", "custom"],
         },
         "steps": [
