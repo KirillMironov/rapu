@@ -3,7 +3,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY messenger messenger
-COPY gateway/pkg/echox gateway/pkg/echox
+COPY gateway/pkg gateway/pkg
 
 FROM modules AS tester
 WORKDIR /app/messenger

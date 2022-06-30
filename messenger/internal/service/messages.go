@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/KirillMironov/rapu/messenger/internal/domain"
 	"github.com/go-redis/redis"
 	"github.com/gorilla/websocket"
@@ -10,7 +11,7 @@ import (
 type Messages struct {
 	messagesBus        MessagesBus
 	messagesRepository MessagesRepository
-	logger             Logger
+	logger             logger.Logger
 }
 
 type MessagesBus interface {
@@ -23,11 +24,7 @@ type MessagesRepository interface {
 	Get(roomId string) ([]domain.Message, error)
 }
 
-type Logger interface {
-	Error(args ...interface{})
-}
-
-func NewMessages(messagesBus MessagesBus, messagesRepository MessagesRepository, logger Logger) *Messages {
+func NewMessages(messagesBus MessagesBus, messagesRepository MessagesRepository, logger logger.Logger) *Messages {
 	return &Messages{
 		messagesBus:        messagesBus,
 		messagesRepository: messagesRepository,
