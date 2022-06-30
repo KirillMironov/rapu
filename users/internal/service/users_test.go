@@ -15,7 +15,7 @@ const (
 	testToken    = "token"
 )
 
-var usersService = NewUsers(mock.UsersRepository{}, mock.JWTManager{})
+var usersService = NewUsers(mock.UsersRepository{}, mock.JWT{})
 
 func TestUsersService_SignUp(t *testing.T) {
 	t.Parallel()

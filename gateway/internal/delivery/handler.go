@@ -3,6 +3,7 @@ package delivery
 import (
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"github.com/KirillMironov/rapu/gateway/pkg/echox"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -10,14 +11,10 @@ import (
 type Handler struct {
 	usersClient proto.UsersClient
 	postsClient proto.PostsClient
-	logger      Logger
+	logger      logger.Logger
 }
 
-type Logger interface {
-	Error(args ...interface{})
-}
-
-func NewHandler(usersClient proto.UsersClient, postsClient proto.PostsClient, logger Logger) *Handler {
+func NewHandler(usersClient proto.UsersClient, postsClient proto.PostsClient, logger logger.Logger) *Handler {
 	return &Handler{
 		usersClient: usersClient,
 		postsClient: postsClient,

@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 	"encoding/json"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/KirillMironov/rapu/posts/internal/delivery/proto"
 	"github.com/KirillMironov/rapu/posts/internal/domain"
 	"google.golang.org/grpc"
@@ -12,7 +13,7 @@ import (
 
 type Handler struct {
 	postsService PostsService
-	logger       Logger
+	logger       logger.Logger
 	proto.UnimplementedPostsServer
 }
 
@@ -21,11 +22,7 @@ type PostsService interface {
 	GetByUserId(ctx context.Context, userId, offset string, limit int64) ([]domain.Post, error)
 }
 
-type Logger interface {
-	Error(args ...interface{})
-}
-
-func NewHandler(postsService PostsService, logger Logger) *grpc.Server {
+func NewHandler(postsService PostsService, logger logger.Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterPostsServer(server, &Handler{
 		postsService: postsService,

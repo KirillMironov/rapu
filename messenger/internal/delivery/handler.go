@@ -3,6 +3,7 @@ package delivery
 import (
 	"context"
 	"github.com/KirillMironov/rapu/gateway/pkg/echox"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/KirillMironov/rapu/messenger/internal/domain"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -18,18 +19,14 @@ var upgrader = websocket.Upgrader{
 
 type Handler struct {
 	clientsService ClientsService
-	logger         Logger
+	logger         logger.Logger
 }
 
 type ClientsService interface {
 	Connect(ctx context.Context, accessToken string, client domain.Client) error
 }
 
-type Logger interface {
-	Error(args ...interface{})
-}
-
-func NewHandler(clientsService ClientsService, logger Logger) *Handler {
+func NewHandler(clientsService ClientsService, logger logger.Logger) *Handler {
 	return &Handler{
 		clientsService: clientsService,
 		logger:         logger,
