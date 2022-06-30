@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/KirillMironov/rapu/messenger/internal/delivery/proto"
 	"github.com/KirillMironov/rapu/messenger/internal/domain"
 	"google.golang.org/grpc/codes"
@@ -12,7 +13,7 @@ import (
 type Clients struct {
 	usersClient     proto.UsersClient
 	messagesService MessagesService
-	logger          Logger
+	logger          logger.Logger
 }
 
 type MessagesService interface {
@@ -20,7 +21,7 @@ type MessagesService interface {
 	Writer(client domain.Client, done <-chan struct{})
 }
 
-func NewClients(usersClient proto.UsersClient, messagesService MessagesService, logger Logger) *Clients {
+func NewClients(usersClient proto.UsersClient, messagesService MessagesService, logger logger.Logger) *Clients {
 	return &Clients{
 		usersClient:     usersClient,
 		messagesService: messagesService,

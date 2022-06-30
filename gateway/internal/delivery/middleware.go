@@ -1,10 +1,8 @@
 package delivery
 
 import (
-	"context"
 	"github.com/KirillMironov/rapu/gateway/internal/delivery/proto"
 	"github.com/labstack/echo/v4"
-	"net/http"
 	"strings"
 )
 
@@ -14,22 +12,22 @@ func (h Handler) auth(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		header := c.Request().Header.Get("Authorization")
 		if header == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized)
+			return echo.ErrUnauthorized
 		}
 
 		token := strings.Split(header, "Bearer ")
 		if len(token) != 2 || token[1] == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized)
+			return echo.ErrUnauthorized
 		}
 
-		resp, err := h.usersClient.Authenticate(context.Background(), &proto.AuthRequest{AccessToken: token[1]})
+		resp, err := h.usersClient.Authenticate(c.Request().Context(), &proto.AuthRequest{AccessToken: token[1]})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized)
+			return echo.ErrUnauthorized
 		}
 
 		userId := resp.GetUserId()
 		if userId == "" {
-			return echo.NewHTTPError(http.StatusUnauthorized)
+			return echo.ErrUnauthorized
 		}
 
 		c.Set(userIdKey, userId)

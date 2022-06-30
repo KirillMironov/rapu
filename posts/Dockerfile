@@ -3,6 +3,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY posts posts
+COPY gateway/pkg gateway/pkg
 
 FROM modules AS tester
 WORKDIR /app/posts

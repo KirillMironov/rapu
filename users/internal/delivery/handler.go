@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"context"
+	"github.com/KirillMironov/rapu/gateway/pkg/logger"
 	"github.com/KirillMironov/rapu/users/internal/delivery/proto"
 	"github.com/KirillMironov/rapu/users/internal/domain"
 	"google.golang.org/grpc"
@@ -11,7 +12,7 @@ import (
 
 type Handler struct {
 	usersService UsersService
-	logger       Logger
+	logger       logger.Logger
 	proto.UnimplementedUsersServer
 }
 
@@ -22,11 +23,7 @@ type UsersService interface {
 	UserExists(ctx context.Context, userId string) (bool, error)
 }
 
-type Logger interface {
-	Error(args ...interface{})
-}
-
-func NewHandler(usersService UsersService, logger Logger) *grpc.Server {
+func NewHandler(usersService UsersService, logger logger.Logger) *grpc.Server {
 	var server = grpc.NewServer()
 	proto.RegisterUsersServer(server, &Handler{
 		usersService: usersService,
